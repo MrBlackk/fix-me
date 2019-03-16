@@ -1,4 +1,4 @@
-package com.mrb.fixme;
+package com.mrb.fixme.router;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -6,9 +6,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.Iterator;
 
-public class Main {
+public class MessageRouter {
 
     public static void main(String[] args) {
+        System.out.println("Router turned ON");
         final String hostname = "127.0.0.1";
         final int port = 5000;
 
@@ -20,11 +21,14 @@ public class Main {
             final Selector selector = Selector.open();
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
+            System.out.print("Waiting");
             while (true) {
-                selector.select(100);
+                System.out.print('.');
+                selector.select(500);
 
                 final Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
                 while (iterator.hasNext()) {
+                    System.out.println();
                     final SelectionKey key = iterator.next();
                     iterator.remove();
                     System.out.println("Key - " + key);
@@ -63,5 +67,6 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        System.out.println("Router turned OFF");
     }
 }
