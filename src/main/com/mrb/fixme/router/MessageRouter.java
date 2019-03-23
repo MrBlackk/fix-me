@@ -4,9 +4,13 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageRouter {
+
+    private static AtomicInteger id = new AtomicInteger(100000);
 
     public static void main(String[] args) {
         System.out.println("Router turned ON");
@@ -22,8 +26,13 @@ public class MessageRouter {
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
             System.out.print("Waiting");
+            int i = 0;
             while (true) {
                 System.out.print('.');
+                i++;
+                if (i % 50 == 0) {
+                    System.out.println();
+                }
                 selector.select(500);
 
                 final Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
@@ -31,14 +40,14 @@ public class MessageRouter {
                     System.out.println();
                     final SelectionKey key = iterator.next();
                     iterator.remove();
-                    System.out.println("Key - " + key);
 
                     if (!key.isValid()) {
                         continue;
                     }
 
                     if (key.isAcceptable()) {
-                        System.out.println("Accepting connection");
+                        final String id = getId();
+                        System.out.println("Accepting connection... With id - " + id);
                         final ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
                         final SocketChannel socketChannel = serverSocketChannel.accept();
                         socketChannel.configureBlocking(false);
@@ -46,15 +55,14 @@ public class MessageRouter {
                     }
 
                     if (key.isReadable()) {
-                        System.out.println("Reading connection");
                         final SocketChannel socketChannel = (SocketChannel) key.channel();
                         final ByteBuffer buffer = ByteBuffer.allocate(1024);
                         final int byteCount = socketChannel.read(buffer);
                         if (byteCount > 0) {
                             buffer.flip();
 
-                            final String message = new String(buffer.array());
-                            System.out.println("Message - '" + message + "'");
+                            final String message = new String(Arrays.copyOf(buffer.array(), byteCount));
+                            System.out.println("Got Message - '" + message + "'");
 
                             if (message.length() > 0) {
                                 final ByteBuffer writeBuffer = ByteBuffer.wrap(message.getBytes());
@@ -68,5 +76,9 @@ public class MessageRouter {
             e.printStackTrace();
         }
         System.out.println("Router turned OFF");
+    }
+
+    private static String getId() {
+        return String.valueOf(id.getAndIncrement());
     }
 }

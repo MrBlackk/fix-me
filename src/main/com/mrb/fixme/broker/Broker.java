@@ -1,6 +1,7 @@
 package com.mrb.fixme.broker;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -27,28 +28,44 @@ public class Broker {
                 if (selector.select() > 0) {
                     final Iterator iterator = selector.selectedKeys().iterator();
                     while (iterator.hasNext()) {
+                        Thread.sleep(2000);
+
                         SelectionKey key = (SelectionKey) iterator.next();
                         iterator.remove();
+
+                        if (!key.isValid()) {
+                            continue;
+                        }
+
                         if (key.isConnectable()) {
                             if (connect(channel)) {
-                                System.out.println("Connected, ready to send messages");
                                 channel.register(selector, SelectionKey.OP_WRITE);
+                                System.out.println("Connected, ready to send messages");
                                 break;
                             }
                         }
 
                         if (key.isWritable()) {
-                            System.out.println("write");
-                            channel.write(ByteBuffer.wrap("BROKER_MESSAGE".getBytes()));
+                            final String message = "BROKER_MESSAGE 4# " + (int)(Math.random() * 100 * Math.random() * 10);
+                            final ByteBuffer byteMessage = ByteBuffer.wrap(message.getBytes());
+                            try {
+                                channel.write(byteMessage);
+                                System.out.println("Sending - " + new String(byteMessage.array()));
+                            } catch (IOException e) {
+                                System.out.println("Connection LOST, you have to reconnect");
+                            }
                         }
                     }
                 }
             }
 
+        } catch (ConnectException e) {
+            System.out.println("Failed to connect to remote server.");
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-
 
         System.out.println("Broker turned OFF");
     }
