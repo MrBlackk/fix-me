@@ -15,15 +15,21 @@ public class MessageRouter {
     public static void main(String[] args) {
         System.out.println("Router turned ON");
         final String hostname = "127.0.0.1";
-        final int port = 5000;
+        final int brokerPort = 5000;
+        final int marketPort = 5001;
 
         try {
-            final ServerSocketChannel serverChannel = ServerSocketChannel.open();
-            serverChannel.configureBlocking(false);
-            serverChannel.socket().bind(new InetSocketAddress(hostname, port));
-
             final Selector selector = Selector.open();
-            serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+            final ServerSocketChannel brokerChannel = ServerSocketChannel.open();
+            brokerChannel.configureBlocking(false);
+            brokerChannel.socket().bind(new InetSocketAddress(hostname, brokerPort));
+            brokerChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+            final ServerSocketChannel marketChannel = ServerSocketChannel.open();
+            marketChannel.configureBlocking(false);
+            marketChannel.socket().bind(new InetSocketAddress(hostname, marketPort));
+            marketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
             System.out.print("Waiting");
             int i = 0;
