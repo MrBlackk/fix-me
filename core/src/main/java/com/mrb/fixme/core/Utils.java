@@ -3,14 +3,16 @@ package com.mrb.fixme.core;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.Future;
 
 public class Utils {
 
     public static String readMessage(AsynchronousSocketChannel channel, ByteBuffer readBuffer)
-            throws InterruptedException, ExecutionException, TimeoutException {
-        int bytesRead = channel.read(readBuffer).get(120, TimeUnit.SECONDS);
+            throws InterruptedException, ExecutionException {
+        return read(channel.read(readBuffer).get(), readBuffer);
+    }
+
+    public static String read(int bytesRead, ByteBuffer readBuffer) {
         if (bytesRead != -1) {
             readBuffer.flip();
             byte[] bytes = new byte[bytesRead];
@@ -19,5 +21,10 @@ public class Utils {
             return new String(bytes);
         }
         return "";
+    }
+
+    public static Future<Integer> sendMessage(AsynchronousSocketChannel channel, String message) {
+        System.out.println("Sending: " + message);
+        return channel.write(ByteBuffer.wrap(message.getBytes()));
     }
 }
