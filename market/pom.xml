@@ -16,6 +16,7 @@
     <packaging>jar</packaging>
 
     <build>
+        <finalName>market</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -29,6 +30,7 @@
                             <mainClass>com.mrb.fixme.market.Market</mainClass>
                         </manifest>
                     </archive>
+                    <outputDirectory>../bin</outputDirectory>
                 </configuration>
             </plugin>
         </plugins>

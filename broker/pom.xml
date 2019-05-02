@@ -24,6 +24,7 @@
     </dependencies>
 
     <build>
+        <finalName>broker</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -37,6 +38,7 @@
                             <mainClass>com.mrb.fixme.broker.Broker</mainClass>
                         </manifest>
                     </archive>
+                    <outputDirectory>../bin</outputDirectory>
                 </configuration>
             </plugin>
         </plugins>

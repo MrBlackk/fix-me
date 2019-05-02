@@ -24,6 +24,7 @@
     </dependencies>
 
     <build>
+        <finalName>router</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -37,6 +38,7 @@
                             <mainClass>com.mrb.fixme.router.MessageRouter</mainClass>
                         </manifest>
                     </archive>
+                    <outputDirectory>../bin</outputDirectory>
                 </configuration>
             </plugin>
         </plugins>
