@@ -13,31 +13,29 @@ import java.util.concurrent.Future;
 
 public class Broker {
 
+    private final ByteBuffer readBuffer = ByteBuffer.allocate(4096);
+    private AsynchronousSocketChannel socketChannel;
+    private String brokerId = "0";
+
     private void start() {
         System.out.println("Broker turned ON");
         try {
-            final AsynchronousSocketChannel channel = AsynchronousSocketChannel.open();
-            final Future future = channel.connect(new InetSocketAddress(Core.HOST_NAME, Core.BROKER_PORT));
-            future.get();
-
-            final ByteBuffer readBuffer = ByteBuffer.allocate(4096);
-            final String id = Utils.readMessage(channel, readBuffer);
-            System.out.print("My id: " + id);
-
-            channel.read(readBuffer, null, new CompletionHandler<Integer, Object>() {
+            getSocketChannel().read(readBuffer, null, new CompletionHandler<Integer, Object>() {
                 @Override
                 public void completed(Integer result, Object attachment) {
                     final String m = Utils.read(result, readBuffer);
                     if (m.length() == 0) {
                         System.out.println("Message router died! Have to reconnect somehow");
+                        socketChannel = null;
                     } else {
                         System.out.println("Server message: " + m);
-                        channel.read(readBuffer, null, this);
                     }
+                    getSocketChannel().read(readBuffer, null, this);
                 }
 
                 @Override
                 public void failed(Throwable exc, Object attachment) {
+                    System.out.println("Reading failed");
                 }
             });
 
@@ -48,17 +46,36 @@ public class Broker {
                     System.out.println("Quit");
                     break;
                 }
-                final Future<Integer> result = Utils.sendMessage(channel, message);
+                final Future<Integer> result = Utils.sendMessage(getSocketChannel(), message);
                 System.out.println("Result: " + result.get());
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
             e.printStackTrace();
         }
         System.out.println("Broker turned OFF");
+    }
+
+    public AsynchronousSocketChannel getSocketChannel() {
+        if (socketChannel == null) {
+            try {
+                socketChannel = AsynchronousSocketChannel.open();
+                final Future future = socketChannel.connect(new InetSocketAddress(Core.HOST_NAME, Core.BROKER_PORT));
+                future.get();
+                brokerId = Utils.readMessage(getSocketChannel(), readBuffer);
+                System.out.println("My current id: " + brokerId);
+            } catch (IOException | InterruptedException | ExecutionException e) {
+                System.out.println("Could not connect to Message Router, reconnecting...");
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ignored) {
+                }
+                socketChannel = null;
+                return getSocketChannel();
+            }
+        }
+        return socketChannel;
     }
 
     public static void main(String[] args) {
