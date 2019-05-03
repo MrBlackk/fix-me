@@ -8,7 +8,6 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,67 +22,41 @@ public class MessageRouter {
     // 2. identify destination by routing table
     // 3. forward message
 
-    private final AtomicInteger id = new AtomicInteger(1);
-    private final Map<String, AsynchronousSocketChannel> routingTable = new HashMap<>();
-    private final ExecutorService executor = Executors.newFixedThreadPool(5);
+    private final AtomicInteger id = new AtomicInteger(Core.INITIAL_ID);
+    private final Map<String, AsynchronousSocketChannel> brokersRoutingTable = new HashMap<>();
+    private final Map<String, AsynchronousSocketChannel> marketsRoutingTable = new HashMap<>();
 
     private void start() {
         System.out.println("Message Router turned ON");
         try {
-            final AsynchronousServerSocketChannel listener = AsynchronousServerSocketChannel
+            final AsynchronousServerSocketChannel brokersListener = AsynchronousServerSocketChannel
                     .open()
                     .bind(new InetSocketAddress(Core.HOST_NAME, Core.BROKER_PORT));
-
-            listener.accept(null, new CompletionHandler<AsynchronousSocketChannel, Void>() {
+            brokersListener.accept(null, new ClientCompletionHandler(brokersListener, brokersRoutingTable, Core.BROKER_NAME, id) {
                 @Override
-                public void completed(AsynchronousSocketChannel brokerChannel, Void attachment) {
-                    listener.accept(null, this);
-
-                    final String currentId = getId();
-                    System.out.println("Someone connected, get ID: " + currentId);
-                    Utils.sendMessage(brokerChannel, currentId);
-                    routingTable.put(currentId, brokerChannel);
-                    System.out.println("Routing table: " + routingTable.keySet().toString());
-
-                    final ByteBuffer buffer = ByteBuffer.allocate(4096);
-                    try {
-                        while (true) {
-                            final String message = Utils.readMessage(brokerChannel, buffer);
-                            if (message.length() == 0) {
-                                break;
-                            }
-                            executor.execute(() -> processMessage(brokerChannel, message));
-                        }
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } catch (ExecutionException e) {
-                        e.printStackTrace();
-                    }
-
-                    routingTable.remove(currentId);
-                    System.out.println("Connection ended, Bye - #" + currentId);
-                    System.out.println("Routing table: " + routingTable.keySet().toString());
-                }
-
-                @Override
-                public void failed(Throwable exc, Void attachment) {
-                    System.out.println("Connection failed");
+                void processMessage(AsynchronousSocketChannel clientChannel, String message) {
+                    processBrokerMessage(clientChannel, message);
                 }
             });
+
+            final AsynchronousServerSocketChannel marketsListener = AsynchronousServerSocketChannel
+                    .open()
+                    .bind(new InetSocketAddress(Core.HOST_NAME, Core.MARKET_PORT));
+            marketsListener.accept(null, new ClientCompletionHandler(marketsListener, marketsRoutingTable, Core.MARKET_NAME, id));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void processMessage(AsynchronousSocketChannel brokerChannel, String message) {
+    private void processBrokerMessage(AsynchronousSocketChannel brokerChannel, String message) {
         System.out.println();
         System.out.println("Processing message: " + message);
         String[] m = message.split(" ");
-        if (m.length  == 2) {
+        if (m.length == 2) {
             final String id = m[0];
             final String mess = m[1];
             System.out.println("id: " + id + ", message: " + mess);
-            final AsynchronousSocketChannel targetChannel = routingTable.get(id);
+            final AsynchronousSocketChannel targetChannel = marketsRoutingTable.get(id);
             if (targetChannel != null) {
                 Utils.sendMessage(targetChannel, mess);
             } else {
@@ -112,7 +85,66 @@ public class MessageRouter {
         }
     }
 
-    private String getId() {
-        return String.valueOf(id.getAndIncrement());
+    private static class ClientCompletionHandler implements CompletionHandler<AsynchronousSocketChannel, Object> {
+
+        private final ExecutorService executor = Executors.newFixedThreadPool(5);
+        private final AsynchronousServerSocketChannel clientListener;
+        private final Map<String, AsynchronousSocketChannel> routingTable;
+        private final String clientName;
+        private final AtomicInteger id;
+
+        private ClientCompletionHandler(AsynchronousServerSocketChannel clientListener, Map<String, AsynchronousSocketChannel> routingTable,
+                                        String clientName, AtomicInteger id) {
+            this.clientListener = clientListener;
+            this.routingTable = routingTable;
+            this.clientName = clientName;
+            this.id = id;
+        }
+
+        @Override
+        public void completed(AsynchronousSocketChannel channel, Object attachment) {
+            clientListener.accept(null, this);
+
+            final String currentId = getNextId();
+            sendClientId(currentId, channel);
+
+            final ByteBuffer buffer = ByteBuffer.allocate(4096);
+            while (true) {
+                final String message = Utils.readMessage(channel, buffer);
+                if (Utils.EMPTY_MESSAGE.equals(message)) {
+                    break;
+                }
+                executor.execute(() -> processMessage(channel, message));
+            }
+            endConnection(currentId);
+        }
+
+        @Override
+        public void failed(Throwable exc, Object attachment) {
+            System.out.println(clientName + " connection failed");
+        }
+
+        private void sendClientId(String currentId, AsynchronousSocketChannel channel) {
+            System.out.println();
+            System.out.println(clientName + " connected, ID: " + currentId);
+            Utils.sendMessage(channel, currentId);
+            routingTable.put(currentId, channel);
+            System.out.println(clientName + " routing table: " + routingTable.keySet().toString());
+        }
+
+        private void endConnection(String currentId) {
+            System.out.println();
+            routingTable.remove(currentId);
+            System.out.println(clientName + " connection ended, Bye - #" + currentId);
+            System.out.println(clientName + " routing table: " + routingTable.keySet().toString());
+        }
+
+        private String getNextId() {
+            return String.valueOf(id.getAndIncrement());
+        }
+
+        void processMessage(AsynchronousSocketChannel clientChannel, String message) {
+            // do nothing
+        }
     }
 }
