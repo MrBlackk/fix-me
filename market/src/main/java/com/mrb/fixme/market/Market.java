@@ -11,6 +11,10 @@ import java.util.Iterator;
 
 public class Market {
 
+    // todo: rewrite to nio2 socket
+    // todo: use chain of responsibility pattern for validating and executing messages(is valid message/checksum->check data->is available resources->could execute->etc.)
+    // todo: rules - is instrument traded on this market (buy/sell) and is available quantity (buy) ? enough money on market to trade(sell)
+
     public static void main(String[] args) {
         System.out.println("Market turned ON");
         final String serverHostname = "127.0.0.1";

@@ -9,6 +9,8 @@ import java.nio.channels.CompletionHandler;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.mrb.fixme.core.Core;
@@ -16,8 +18,14 @@ import com.mrb.fixme.core.Utils;
 
 public class MessageRouter {
 
-    private static final AtomicInteger id = new AtomicInteger(1);
-    private static final Map<String, AsynchronousSocketChannel> routingTable = new HashMap<>();
+    // todo: 3 steps
+    // 1. validate checksum
+    // 2. identify destination by routing table
+    // 3. forward message
+
+    private final AtomicInteger id = new AtomicInteger(1);
+    private final Map<String, AsynchronousSocketChannel> routingTable = new HashMap<>();
+    private final ExecutorService executor = Executors.newFixedThreadPool(5);
 
     private void start() {
         System.out.println("Message Router turned ON");
@@ -28,21 +36,23 @@ public class MessageRouter {
 
             listener.accept(null, new CompletionHandler<AsynchronousSocketChannel, Void>() {
                 @Override
-                public void completed(AsynchronousSocketChannel channel, Void attachment) {
+                public void completed(AsynchronousSocketChannel brokerChannel, Void attachment) {
                     listener.accept(null, this);
 
                     final String currentId = getId();
                     System.out.println("Someone connected, get ID: " + currentId);
-                    Utils.sendMessage(channel, currentId);
-                    routingTable.put(currentId, channel);
+                    Utils.sendMessage(brokerChannel, currentId);
+                    routingTable.put(currentId, brokerChannel);
                     System.out.println("Routing table: " + routingTable.keySet().toString());
 
                     final ByteBuffer buffer = ByteBuffer.allocate(4096);
                     try {
-                        String message = "message";
-                        while (message.length() > 0) {
-                            message = Utils.readMessage(channel, buffer);
-                            processMessage(message);
+                        while (true) {
+                            final String message = Utils.readMessage(brokerChannel, buffer);
+                            if (message.length() == 0) {
+                                break;
+                            }
+                            executor.execute(() -> processMessage(brokerChannel, message));
                         }
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -65,7 +75,7 @@ public class MessageRouter {
         }
     }
 
-    private static void processMessage(String message) {
+    private void processMessage(AsynchronousSocketChannel brokerChannel, String message) {
         System.out.println();
         System.out.println("Processing message: " + message);
         String[] m = message.split(" ");
@@ -73,8 +83,13 @@ public class MessageRouter {
             final String id = m[0];
             final String mess = m[1];
             System.out.println("id: " + id + ", message: " + mess);
-            final AsynchronousSocketChannel channel = routingTable.get(id);
-            Utils.sendMessage(channel, mess);
+            final AsynchronousSocketChannel targetChannel = routingTable.get(id);
+            if (targetChannel != null) {
+                Utils.sendMessage(targetChannel, mess);
+            } else {
+                Utils.sendMessage(brokerChannel, "No client with such id");
+                System.out.println("No client with such id");
+            }
         } else {
             System.out.println("Wrong message");
         }
@@ -97,7 +112,7 @@ public class MessageRouter {
         }
     }
 
-    private static String getId() {
+    private String getId() {
         return String.valueOf(id.getAndIncrement());
     }
 }

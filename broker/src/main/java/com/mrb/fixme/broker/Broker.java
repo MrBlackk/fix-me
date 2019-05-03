@@ -28,8 +28,12 @@ public class Broker {
                 @Override
                 public void completed(Integer result, Object attachment) {
                     final String m = Utils.read(result, readBuffer);
-                    System.out.println("Server message: " + m);
-                    channel.read(readBuffer, null, this);
+                    if (m.length() == 0) {
+                        System.out.println("Message router died! Have to reconnect somehow");
+                    } else {
+                        System.out.println("Server message: " + m);
+                        channel.read(readBuffer, null, this);
+                    }
                 }
 
                 @Override
