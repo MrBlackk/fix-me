@@ -20,8 +20,6 @@ public class MessageRouter {
 
     // todo: 3 steps
     // 1. validate checksum
-    // 2. identify destination by routing table
-    // 3. forward message
 
     private final AtomicInteger id = new AtomicInteger(Core.INITIAL_ID);
     private final Map<String, AsynchronousSocketChannel> brokersRoutingTable = new HashMap<>();
@@ -33,45 +31,16 @@ public class MessageRouter {
             final AsynchronousServerSocketChannel brokersListener = AsynchronousServerSocketChannel
                     .open()
                     .bind(new InetSocketAddress(Core.HOST_NAME, Core.BROKER_PORT));
-            brokersListener.accept(null, new ClientCompletionHandler(brokersListener, brokersRoutingTable, Core.BROKER_NAME, id) {
-                @Override
-                void processMessage(AsynchronousSocketChannel clientChannel, String message) {
-                    processBrokerMessage(clientChannel, message);
-                }
-            });
+            brokersListener.accept(null,
+                    new ClientCompletionHandler(brokersListener, brokersRoutingTable, marketsRoutingTable, Core.BROKER_NAME, id));
 
             final AsynchronousServerSocketChannel marketsListener = AsynchronousServerSocketChannel
                     .open()
                     .bind(new InetSocketAddress(Core.HOST_NAME, Core.MARKET_PORT));
-            marketsListener.accept(null, new ClientCompletionHandler(marketsListener, marketsRoutingTable, Core.MARKET_NAME, id) {
-                @Override
-                void processMessage(AsynchronousSocketChannel clientChannel, String message) {
-                    System.out.println("Market back message: " + message);
-                    final String brokerId = Core.getFixValueByTag(message, FixTag.TARGET_ID);
-                    final AsynchronousSocketChannel targetChannel = brokersRoutingTable.get(brokerId);
-                    if (targetChannel != null) {
-                        Utils.sendMessage(targetChannel, message);
-                    } else {
-                        System.out.println("No broker???");
-                    }
-                }
-            });
+            marketsListener.accept(null,
+                    new ClientCompletionHandler(marketsListener, marketsRoutingTable, brokersRoutingTable, Core.MARKET_NAME, id));
         } catch (IOException e) {
             e.printStackTrace();
-        }
-    }
-
-    //todo: reformat to real FIX notation
-    private void processBrokerMessage(AsynchronousSocketChannel brokerChannel, String message) {
-        System.out.println();
-        System.out.println("Processing message: " + message);
-        final String targetId = Core.getFixValueByTag(message, FixTag.TARGET_ID);
-        final AsynchronousSocketChannel targetChannel = marketsRoutingTable.get(targetId);
-        if (targetChannel != null) {
-            Utils.sendMessage(targetChannel, message);
-        } else {
-            Utils.sendMessage(brokerChannel, "No client with such id: " + targetId);
-            System.out.println("No client with such id: " + targetId);
         }
     }
 
@@ -92,18 +61,20 @@ public class MessageRouter {
         }
     }
 
-    private abstract static class ClientCompletionHandler implements CompletionHandler<AsynchronousSocketChannel, Object> {
+    private static class ClientCompletionHandler implements CompletionHandler<AsynchronousSocketChannel, Object> {
 
         private final ExecutorService executor = Executors.newFixedThreadPool(5);
         private final AsynchronousServerSocketChannel clientListener;
         private final Map<String, AsynchronousSocketChannel> routingTable;
+        private final Map<String, AsynchronousSocketChannel> targetRoutingTable;
         private final String clientName;
         private final AtomicInteger id;
 
         private ClientCompletionHandler(AsynchronousServerSocketChannel clientListener, Map<String, AsynchronousSocketChannel> routingTable,
-                                        String clientName, AtomicInteger id) {
+                                        Map<String, AsynchronousSocketChannel> targetRoutingTable, String clientName, AtomicInteger id) {
             this.clientListener = clientListener;
             this.routingTable = routingTable;
+            this.targetRoutingTable = targetRoutingTable;
             this.clientName = clientName;
             this.id = id;
         }
@@ -150,6 +121,16 @@ public class MessageRouter {
             return String.valueOf(id.getAndIncrement());
         }
 
-        abstract void processMessage(AsynchronousSocketChannel clientChannel, String message);
+        private void processMessage(AsynchronousSocketChannel clientChannel, String message) {
+            System.out.println();
+            System.out.println("Processing message: " + message);
+            final String targetId = Core.getFixValueByTag(message, FixTag.TARGET_ID);
+            final AsynchronousSocketChannel targetChannel = targetRoutingTable.get(targetId);
+            if (targetChannel != null) {
+                Utils.sendMessage(targetChannel, message);
+            } else {
+                Utils.sendMessage(clientChannel, "No client with such id: " + targetId);
+            }
+        }
     }
 }
