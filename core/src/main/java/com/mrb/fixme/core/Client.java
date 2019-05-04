@@ -4,15 +4,15 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.CompletionHandler;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public abstract class Client {
 
     private static final String FAKE_ID = "00-00-00";
-    private static final int DEFAULT_BUFFER_SIZE = 4096;
 
-    private final ByteBuffer buffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE);
+    private final ByteBuffer buffer = ByteBuffer.allocate(Core.DEFAULT_BUFFER_SIZE);
     private final int port;
 
     private AsynchronousSocketChannel socketChannel;
@@ -49,7 +49,7 @@ public abstract class Client {
         return socketChannel;
     }
 
-    protected void invalidateConnection() {
+    private void invalidateConnection() {
         socketChannel = null;
     }
 
@@ -57,7 +57,28 @@ public abstract class Client {
         return id;
     }
 
-    protected ByteBuffer getBuffer() {
-        return buffer;
+    protected void readFromSocket() {
+        getSocketChannel().read(buffer, null, new CompletionHandler<Integer, Object>() {
+            @Override
+            public void completed(Integer result, Object attachment) {
+                final String message = Utils.read(result, buffer);
+                if (Utils.EMPTY_MESSAGE.equals(message)) {
+                    System.out.println("Message router died! Have to reconnect somehow");
+                    invalidateConnection();
+                } else {
+                    onSuccessRead(message);
+                }
+                getSocketChannel().read(buffer, null, this);
+            }
+
+            @Override
+            public void failed(Throwable exc, Object attachment) {
+                System.out.println("Reading failed");
+            }
+        });
+    }
+
+    protected void onSuccessRead(String message) {
+        // do nothing
     }
 }

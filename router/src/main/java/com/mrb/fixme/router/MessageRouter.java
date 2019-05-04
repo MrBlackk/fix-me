@@ -6,8 +6,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,8 +19,8 @@ import com.mrb.fixme.core.Utils;
 public class MessageRouter {
 
     private final AtomicInteger id = new AtomicInteger(Core.INITIAL_ID);
-    private final Map<String, AsynchronousSocketChannel> brokersRoutingTable = new HashMap<>();
-    private final Map<String, AsynchronousSocketChannel> marketsRoutingTable = new HashMap<>();
+    private final Map<String, AsynchronousSocketChannel> brokersRoutingTable = new ConcurrentHashMap<>();
+    private final Map<String, AsynchronousSocketChannel> marketsRoutingTable = new ConcurrentHashMap<>();
 
     private void start() {
         System.out.println("Message Router turned ON");
@@ -83,7 +83,7 @@ public class MessageRouter {
             final String currentId = getNextId();
             sendClientId(currentId, channel);
 
-            final ByteBuffer buffer = ByteBuffer.allocate(4096);
+            final ByteBuffer buffer = ByteBuffer.allocate(Core.DEFAULT_BUFFER_SIZE);
             while (true) {
                 final String message = Utils.readMessage(channel, buffer);
                 if (Utils.EMPTY_MESSAGE.equals(message)) {
@@ -98,16 +98,15 @@ public class MessageRouter {
             endConnection(currentId);
         }
 
-        private boolean isValidChecksum(String message) {
-            final int lastIndex = message.lastIndexOf(FixTag.CHECKSUM.getValue() + "=");
-            final String calculatedChecksum = Core.calculateChecksum(message.substring(0, lastIndex));
-            final String messageChecksum = Core.getFixValueByTag(message, FixTag.CHECKSUM);
-            return calculatedChecksum.equals(messageChecksum);
-        }
-
         @Override
         public void failed(Throwable exc, Object attachment) {
             System.out.println(clientName + " connection failed");
+        }
+
+        private boolean isValidChecksum(String message) {
+            final String calculatedChecksum = Core.calculateChecksum(Core.getMessageWithoutChecksum(message));
+            final String messageChecksum = Core.getFixValueByTag(message, FixTag.CHECKSUM);
+            return calculatedChecksum.equals(messageChecksum);
         }
 
         private void sendClientId(String currentId, AsynchronousSocketChannel channel) {

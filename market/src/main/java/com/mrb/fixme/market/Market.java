@@ -5,8 +5,6 @@ import com.mrb.fixme.core.Core;
 import com.mrb.fixme.core.FixTag;
 import com.mrb.fixme.core.Utils;
 
-import java.nio.channels.*;
-
 public class Market extends Client {
 
     // todo: use chain of responsibility pattern for validating and executing messages(is valid message/checksum->check data->is available resources->could execute->etc.)
@@ -18,27 +16,16 @@ public class Market extends Client {
 
     private void start() {
         System.out.println("Market turned ON");
-        getSocketChannel().read(getBuffer(), null, new CompletionHandler<Integer, Object>() {
-            @Override
-            public void completed(Integer result, Object attachment) {
-                final String message = Utils.read(result, getBuffer());
-                if (Utils.EMPTY_MESSAGE.equals(message)) {
-                    System.out.println("Message router died! Have to reconnect somehow");
-                    invalidateConnection();
-                } else {
-                    final String brokerId = Core.getFixValueByTag(message, FixTag.SOURCE_ID);
-                    final String resultMessage = Core.resultFixMessage("Executed", getId(), brokerId);
-                    Utils.sendMessage(getSocketChannel(), resultMessage);
-                }
-                getSocketChannel().read(getBuffer(), null, this);
-            }
+        readFromSocket();
 
-            @Override
-            public void failed(Throwable exc, Object attachment) {
-                System.out.println("Market reading failed");
-            }
-        });
         while (true) ;
+    }
+
+    @Override
+    protected void onSuccessRead(String message) {
+        final String brokerId = Core.getFixValueByTag(message, FixTag.SOURCE_ID);
+        final String resultMessage = Core.resultFixMessage("Executed", getId(), brokerId);
+        Utils.sendMessage(getSocketChannel(), resultMessage);
     }
 
     public static void main(String[] args) {

@@ -3,6 +3,8 @@ package com.mrb.fixme.core;
 import com.mrb.fixme.core.exception.UserInputValidationException;
 import com.mrb.fixme.core.exception.WrongFixTagException;
 
+import java.util.regex.Pattern;
+
 public class Core {
 
     public static final String HOST_NAME = "127.0.0.1";
@@ -11,9 +13,14 @@ public class Core {
     public static final int INITIAL_ID = 1; //todo: change to 6 digit id
     public static final String MARKET_NAME = "Market";
     public static final String BROKER_NAME = "Broker";
+    public static final int DEFAULT_BUFFER_SIZE = 4096;
+
+    private static final String USER_INPUT_DELIMITER = " ";
+    private static final String TAG_VALUE_DELIMITER = "=";
+    private static final String FIELD_DELIMITER = "|";
 
     public static String userInputToFixMessage(String input, String id) throws UserInputValidationException {
-        final String[] m = input.split(" ");
+        final String[] m = input.split(USER_INPUT_DELIMITER);
         if (m.length != 4) {
             throw new UserInputValidationException("Wrong input");
         }
@@ -38,9 +45,9 @@ public class Core {
 
     private static void addTag(StringBuilder builder, FixTag tag, String value) {
         builder.append(tag.getValue())
-                .append("=")
+                .append(TAG_VALUE_DELIMITER)
                 .append(value)
-                .append("|");
+                .append(FIELD_DELIMITER);
     }
 
     public static String calculateChecksum(String message) {
@@ -52,9 +59,14 @@ public class Core {
         return String.format("%03d", sum % 256);
     }
 
+    public static String getMessageWithoutChecksum(String fixMessage) {
+        final int checksumIndex = fixMessage.lastIndexOf(FixTag.CHECKSUM.getValue() + Core.TAG_VALUE_DELIMITER);
+        return fixMessage.substring(0, checksumIndex);
+    }
+
     public static String getFixValueByTag(String fixMessage, FixTag tag) {
-        final String[] tagValues = fixMessage.split("\\|");
-        final String searchPattern = tag.getValue() + "=";
+        final String[] tagValues = fixMessage.split(Pattern.quote(FIELD_DELIMITER));
+        final String searchPattern = tag.getValue() + TAG_VALUE_DELIMITER;
         for (String tagValue : tagValues) {
             if (tagValue.startsWith(searchPattern)) {
                 return tagValue.substring(searchPattern.length());

@@ -5,7 +5,6 @@ import com.mrb.fixme.core.Core;
 import com.mrb.fixme.core.Utils;
 import com.mrb.fixme.core.exception.UserInputValidationException;
 
-import java.nio.channels.CompletionHandler;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -19,22 +18,7 @@ public class Broker extends Client {
     private void start() {
         System.out.println("Broker turned ON");
         try {
-            getSocketChannel().read(getBuffer(), null, new CompletionHandler<Integer, Object>() {
-                @Override
-                public void completed(Integer result, Object attachment) {
-                    final String message = Utils.read(result, getBuffer());
-                    if (Utils.EMPTY_MESSAGE.equals(message)) {
-                        System.out.println("Message router died! Have to reconnect somehow");
-                        invalidateConnection();
-                    }
-                    getSocketChannel().read(getBuffer(), null, this);
-                }
-
-                @Override
-                public void failed(Throwable exc, Object attachment) {
-                    System.out.println("Broker reading failed");
-                }
-            });
+            readFromSocket();
 
             final Scanner scanner = new Scanner(System.in);
             System.out.println("Message to send 'MARKET_ID INSTRUMENT_NAME QUANTITY PRICE':");
@@ -50,7 +34,6 @@ public class Broker extends Client {
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
-        System.out.println("Broker turned OFF");
     }
 
     public static void main(String[] args) {
