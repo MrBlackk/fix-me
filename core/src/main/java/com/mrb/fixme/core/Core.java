@@ -23,7 +23,7 @@ public class Core {
         addTag(builder, FixTag.INSTRUMENT, m[1]);
         addTag(builder, FixTag.QUANTITY, m[2]);
         addTag(builder, FixTag.PRICE, m[3]);
-        addTag(builder, FixTag.CHECKSUM, "100");
+        addTag(builder, FixTag.CHECKSUM, calculateChecksum(builder.toString()));
         return builder.toString();
     }
 
@@ -32,7 +32,7 @@ public class Core {
         addTag(builder, FixTag.SOURCE_ID, srcId);
         addTag(builder, FixTag.TARGET_ID, targetId);
         addTag(builder, FixTag.RESULT, result);
-        addTag(builder, FixTag.CHECKSUM, "100");
+        addTag(builder, FixTag.CHECKSUM, calculateChecksum(builder.toString()));
         return builder.toString();
     }
 
@@ -41,6 +41,15 @@ public class Core {
                 .append("=")
                 .append(value)
                 .append("|");
+    }
+
+    public static String calculateChecksum(String message) {
+        final byte[] bytes = message.getBytes();
+        int sum = 0;
+        for (byte aByte : bytes) {
+            sum += aByte;
+        }
+        return String.format("%03d", sum % 256);
     }
 
     public static String getFixValueByTag(String fixMessage, FixTag tag) {

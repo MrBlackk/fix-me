@@ -18,9 +18,6 @@ import com.mrb.fixme.core.Utils;
 
 public class MessageRouter {
 
-    // todo: 3 steps
-    // 1. validate checksum
-
     private final AtomicInteger id = new AtomicInteger(Core.INITIAL_ID);
     private final Map<String, AsynchronousSocketChannel> brokersRoutingTable = new HashMap<>();
     private final Map<String, AsynchronousSocketChannel> marketsRoutingTable = new HashMap<>();
@@ -92,9 +89,20 @@ public class MessageRouter {
                 if (Utils.EMPTY_MESSAGE.equals(message)) {
                     break;
                 }
-                executor.execute(() -> processMessage(channel, message));
+                if (isValidChecksum(message)) {
+                    executor.execute(() -> processMessage(channel, message));
+                } else {
+                    Utils.sendMessage(channel, "Invalid checksum for message: " + message);
+                }
             }
             endConnection(currentId);
+        }
+
+        private boolean isValidChecksum(String message) {
+            final int lastIndex = message.lastIndexOf(FixTag.CHECKSUM.getValue() + "=");
+            final String calculatedChecksum = Core.calculateChecksum(message.substring(0, lastIndex));
+            final String messageChecksum = Core.getFixValueByTag(message, FixTag.CHECKSUM);
+            return calculatedChecksum.equals(messageChecksum);
         }
 
         @Override
