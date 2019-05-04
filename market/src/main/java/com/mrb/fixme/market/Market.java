@@ -2,6 +2,7 @@ package com.mrb.fixme.market;
 
 import com.mrb.fixme.core.Client;
 import com.mrb.fixme.core.Core;
+import com.mrb.fixme.core.FixTag;
 import com.mrb.fixme.core.Utils;
 
 import java.nio.channels.*;
@@ -24,6 +25,10 @@ public class Market extends Client {
                 if (Utils.EMPTY_MESSAGE.equals(message)) {
                     System.out.println("Message router died! Have to reconnect somehow");
                     invalidateConnection();
+                } else {
+                    final String brokerId = Core.getFixValueByTag(message, FixTag.SOURCE_ID);
+                    final String resultMessage = Core.resultFixMessage("Executed", getId(), brokerId);
+                    Utils.sendMessage(getSocketChannel(), resultMessage);
                 }
                 getSocketChannel().read(getBuffer(), null, this);
             }

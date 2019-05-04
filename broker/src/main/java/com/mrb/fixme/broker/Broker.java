@@ -3,6 +3,7 @@ package com.mrb.fixme.broker;
 import com.mrb.fixme.core.Client;
 import com.mrb.fixme.core.Core;
 import com.mrb.fixme.core.Utils;
+import com.mrb.fixme.core.exception.UserInputValidationException;
 
 import java.nio.channels.CompletionHandler;
 import java.util.Scanner;
@@ -36,11 +37,15 @@ public class Broker extends Client {
             });
 
             final Scanner scanner = new Scanner(System.in);
+            System.out.println("Message to send 'MARKET_ID INSTRUMENT_NAME QUANTITY PRICE':");
             while (true) {
-                System.out.print("Message to send: ");
-                final String message = scanner.nextLine();
-                final Future<Integer> result = Utils.sendMessage(getSocketChannel(), message);
-                System.out.println("Result: " + result.get());
+                try {
+                    final String message = Core.userInputToFixMessage(scanner.nextLine(), getId());
+                    final Future<Integer> result = Utils.sendMessage(getSocketChannel(), message);
+                    System.out.println("Result: " + result.get());
+                } catch (UserInputValidationException e) {
+                    System.out.println(e.getMessage());
+                }
             }
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
