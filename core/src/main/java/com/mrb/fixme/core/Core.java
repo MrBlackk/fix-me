@@ -10,7 +10,7 @@ public class Core {
     public static final String HOST_NAME = "127.0.0.1";
     public static final int BROKER_PORT = 5000;
     public static final int MARKET_PORT = 5001;
-    public static final int INITIAL_ID = 1; //todo: change to 6 digit id
+    public static final int INITIAL_ID = 1;
     public static final String MARKET_NAME = "Market";
     public static final String BROKER_NAME = "Broker";
     public static final int DEFAULT_BUFFER_SIZE = 4096;
@@ -21,15 +21,16 @@ public class Core {
 
     public static String userInputToFixMessage(String input, String id) throws UserInputValidationException {
         final String[] m = input.split(USER_INPUT_DELIMITER);
-        if (m.length != 4) {
+        if (m.length != 5) { //todo: full validation of input
             throw new UserInputValidationException("Wrong input");
         }
         final StringBuilder builder = new StringBuilder();
         addTag(builder, FixTag.SOURCE_ID, id);
-        addTag(builder, FixTag.TARGET_ID, m[0]);
-        addTag(builder, FixTag.INSTRUMENT, m[1]);
-        addTag(builder, FixTag.QUANTITY, m[2]);
-        addTag(builder, FixTag.PRICE, m[3]);
+        addTag(builder, FixTag.TARGET_ID, String.format("%06d", Integer.parseInt(m[0])));
+        addTag(builder, FixTag.TYPE, m[1]);
+        addTag(builder, FixTag.INSTRUMENT, m[2]);
+        addTag(builder, FixTag.QUANTITY, m[3]);
+        addTag(builder, FixTag.PRICE, m[4]);
         addTag(builder, FixTag.CHECKSUM, calculateChecksum(builder.toString()));
         return builder.toString();
     }

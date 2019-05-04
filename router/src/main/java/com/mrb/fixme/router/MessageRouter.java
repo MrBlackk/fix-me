@@ -125,7 +125,7 @@ public class MessageRouter {
         }
 
         private String getNextId() {
-            return String.valueOf(id.getAndIncrement());
+            return String.format("%06d", id.getAndIncrement());
         }
 
         private void processMessage(AsynchronousSocketChannel clientChannel, String message) {

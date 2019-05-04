@@ -21,7 +21,7 @@ public class Broker extends Client {
             readFromSocket();
 
             final Scanner scanner = new Scanner(System.in);
-            System.out.println("Message to send 'MARKET_ID INSTRUMENT_NAME QUANTITY PRICE':");
+            System.out.println("Message to send 'MARKET_ID BUY_OR_SELL INSTRUMENT_NAME QUANTITY PRICE':");
             while (true) {
                 try {
                     final String message = Core.userInputToFixMessage(scanner.nextLine(), getId());
