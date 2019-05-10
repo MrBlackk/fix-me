@@ -13,29 +13,33 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.mrb.fixme.core.Core;
-import com.mrb.fixme.core.FixTag;
 import com.mrb.fixme.core.Utils;
+import com.mrb.fixme.core.handler.MessageHandler;
+import com.mrb.fixme.router.handler.ChecksumValidator;
+import com.mrb.fixme.router.handler.MessageProcessor;
 
 public class MessageRouter {
 
     private final AtomicInteger id = new AtomicInteger(Core.INITIAL_ID);
-    private final Map<String, AsynchronousSocketChannel> brokersRoutingTable = new ConcurrentHashMap<>();
-    private final Map<String, AsynchronousSocketChannel> marketsRoutingTable = new ConcurrentHashMap<>();
+    private final Map<String, AsynchronousSocketChannel> routingTable = new ConcurrentHashMap<>();
 
     private void start() {
         System.out.println("Message Router turned ON");
         try {
+            final MessageHandler messageHandler = new ChecksumValidator();
+            messageHandler.setNext(new MessageProcessor(routingTable));
+
             final AsynchronousServerSocketChannel brokersListener = AsynchronousServerSocketChannel
                     .open()
                     .bind(new InetSocketAddress(Core.HOST_NAME, Core.BROKER_PORT));
             brokersListener.accept(null,
-                    new ClientCompletionHandler(brokersListener, brokersRoutingTable, marketsRoutingTable, Core.BROKER_NAME, id));
+                    new ClientCompletionHandler(brokersListener, routingTable, Core.BROKER_NAME, id, messageHandler));
 
             final AsynchronousServerSocketChannel marketsListener = AsynchronousServerSocketChannel
                     .open()
                     .bind(new InetSocketAddress(Core.HOST_NAME, Core.MARKET_PORT));
             marketsListener.accept(null,
-                    new ClientCompletionHandler(marketsListener, marketsRoutingTable, brokersRoutingTable, Core.MARKET_NAME, id));
+                    new ClientCompletionHandler(marketsListener, routingTable, Core.MARKET_NAME, id, messageHandler));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -60,20 +64,22 @@ public class MessageRouter {
 
     private static class ClientCompletionHandler implements CompletionHandler<AsynchronousSocketChannel, Object> {
 
-        private final ExecutorService executor = Executors.newFixedThreadPool(5);
+        private static final int EXECUTOR_THREADS = 5;
+
+        private final ExecutorService executor = Executors.newFixedThreadPool(EXECUTOR_THREADS);
         private final AsynchronousServerSocketChannel clientListener;
         private final Map<String, AsynchronousSocketChannel> routingTable;
-        private final Map<String, AsynchronousSocketChannel> targetRoutingTable;
         private final String clientName;
         private final AtomicInteger id;
+        private final MessageHandler messageHandler;
 
-        private ClientCompletionHandler(AsynchronousServerSocketChannel clientListener, Map<String, AsynchronousSocketChannel> routingTable,
-                                        Map<String, AsynchronousSocketChannel> targetRoutingTable, String clientName, AtomicInteger id) {
+        private ClientCompletionHandler(AsynchronousServerSocketChannel clientListener, Map<String,AsynchronousSocketChannel> routingTable,
+                                        String clientName, AtomicInteger id, MessageHandler messageHandler) {
             this.clientListener = clientListener;
             this.routingTable = routingTable;
-            this.targetRoutingTable = targetRoutingTable;
             this.clientName = clientName;
             this.id = id;
+            this.messageHandler = messageHandler;
         }
 
         @Override
@@ -89,11 +95,7 @@ public class MessageRouter {
                 if (Utils.EMPTY_MESSAGE.equals(message)) {
                     break;
                 }
-                if (isValidChecksum(message)) {
-                    executor.execute(() -> processMessage(channel, message));
-                } else {
-                    Utils.sendMessage(channel, "Invalid checksum for message: " + message);
-                }
+                executor.execute(() -> messageHandler.handle(channel, message));
             }
             endConnection(currentId);
         }
@@ -101,12 +103,6 @@ public class MessageRouter {
         @Override
         public void failed(Throwable exc, Object attachment) {
             System.out.println(clientName + " connection failed");
-        }
-
-        private boolean isValidChecksum(String message) {
-            final String calculatedChecksum = Core.calculateChecksum(Core.getMessageWithoutChecksum(message));
-            final String messageChecksum = Core.getFixValueByTag(message, FixTag.CHECKSUM);
-            return calculatedChecksum.equals(messageChecksum);
         }
 
         private void sendClientId(String currentId, AsynchronousSocketChannel channel) {
@@ -125,19 +121,7 @@ public class MessageRouter {
         }
 
         private String getNextId() {
-            return String.format("%06d", id.getAndIncrement());
-        }
-
-        private void processMessage(AsynchronousSocketChannel clientChannel, String message) {
-            System.out.println();
-            System.out.println("Processing message: " + message);
-            final String targetId = Core.getFixValueByTag(message, FixTag.TARGET_ID);
-            final AsynchronousSocketChannel targetChannel = targetRoutingTable.get(targetId);
-            if (targetChannel != null) {
-                Utils.sendMessage(targetChannel, message);
-            } else {
-                Utils.sendMessage(clientChannel, "No client with such id: " + targetId);
-            }
+            return String.format(Core.ID_FORMAT, id.getAndIncrement());
         }
     }
 }

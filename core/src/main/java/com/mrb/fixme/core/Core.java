@@ -14,6 +14,7 @@ public class Core {
     public static final String MARKET_NAME = "Market";
     public static final String BROKER_NAME = "Broker";
     public static final int DEFAULT_BUFFER_SIZE = 4096;
+    public static final String ID_FORMAT = "%06d";
 
     private static final String USER_INPUT_DELIMITER = " ";
     private static final String TAG_VALUE_DELIMITER = "=";
@@ -26,7 +27,7 @@ public class Core {
         }
         final StringBuilder builder = new StringBuilder();
         addTag(builder, FixTag.SOURCE_ID, id);
-        addTag(builder, FixTag.TARGET_ID, String.format("%06d", Integer.parseInt(m[0])));
+        addTag(builder, FixTag.TARGET_ID, String.format(ID_FORMAT, Integer.parseInt(m[0])));
         addTag(builder, FixTag.TYPE, m[1]);
         addTag(builder, FixTag.INSTRUMENT, m[2]);
         addTag(builder, FixTag.QUANTITY, m[3]);

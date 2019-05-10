@@ -2,8 +2,8 @@ package com.mrb.fixme.market;
 
 import com.mrb.fixme.core.Client;
 import com.mrb.fixme.core.Core;
-import com.mrb.fixme.core.FixTag;
-import com.mrb.fixme.core.Utils;
+import com.mrb.fixme.core.handler.MessageHandler;
+import com.mrb.fixme.market.handler.MessageExecutor;
 
 public class Market extends Client {
 
@@ -23,9 +23,11 @@ public class Market extends Client {
 
     @Override
     protected void onSuccessRead(String message) {
-        final String brokerId = Core.getFixValueByTag(message, FixTag.SOURCE_ID);
-        final String resultMessage = Core.resultFixMessage("Executed", getId(), brokerId);
-        Utils.sendMessage(getSocketChannel(), resultMessage);
+        getMessageHandler().handle(getSocketChannel(), message);
+    }
+
+    private MessageHandler getMessageHandler() {
+        return new MessageExecutor(getId());
     }
 
     public static void main(String[] args) {
