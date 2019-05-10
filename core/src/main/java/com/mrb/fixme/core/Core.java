@@ -15,6 +15,7 @@ public class Core {
     public static final String BROKER_NAME = "Broker";
     public static final int DEFAULT_BUFFER_SIZE = 4096;
     public static final String ID_FORMAT = "%06d";
+    public static final String USER_MESSAGE_FORMAT = "'MARKET_ID BUY_OR_SELL INSTRUMENT_NAME QUANTITY PRICE'";
 
     private static final String USER_INPUT_DELIMITER = " ";
     private static final String TAG_VALUE_DELIMITER = "=";
@@ -23,11 +24,15 @@ public class Core {
     public static String userInputToFixMessage(String input, String id) throws UserInputValidationException {
         final String[] m = input.split(USER_INPUT_DELIMITER);
         if (m.length != 5) { //todo: full validation of input
-            throw new UserInputValidationException("Wrong input");
+            throw new UserInputValidationException("Wrong input, should be: " + USER_MESSAGE_FORMAT);
         }
         final StringBuilder builder = new StringBuilder();
         addTag(builder, FixTag.SOURCE_ID, id);
-        addTag(builder, FixTag.TARGET_ID, String.format(ID_FORMAT, Integer.parseInt(m[0])));
+        try {
+            addTag(builder, FixTag.TARGET_ID, String.format(ID_FORMAT, Integer.parseInt(m[0])));
+        } catch (NumberFormatException ex) {
+            throw new UserInputValidationException("Id should be a number");
+        }
         addTag(builder, FixTag.TYPE, m[1]);
         addTag(builder, FixTag.INSTRUMENT, m[2]);
         addTag(builder, FixTag.QUANTITY, m[3]);

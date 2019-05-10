@@ -1,9 +1,8 @@
-package com.mrb.fixme.router.handler;
+package com.mrb.fixme.core.handler;
 
 import com.mrb.fixme.core.Core;
 import com.mrb.fixme.core.FixTag;
 import com.mrb.fixme.core.Utils;
-import com.mrb.fixme.core.handler.BaseMessageHandler;
 
 import java.nio.channels.AsynchronousSocketChannel;
 

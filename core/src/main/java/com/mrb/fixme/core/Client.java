@@ -1,5 +1,9 @@
 package com.mrb.fixme.core;
 
+import com.mrb.fixme.core.handler.ChecksumValidator;
+import com.mrb.fixme.core.handler.MandatoryTagsValidator;
+import com.mrb.fixme.core.handler.MessageHandler;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -78,7 +82,14 @@ public abstract class Client {
         });
     }
 
-    protected void onSuccessRead(String message) {
-        // do nothing
+    private void onSuccessRead(String message) {
+        getMessageHandler().handle(getSocketChannel(), message);
+    }
+
+    protected MessageHandler getMessageHandler() {
+        final MessageHandler messageHandler = new MandatoryTagsValidator();
+        final MessageHandler checksumValidator = new ChecksumValidator();
+        messageHandler.setNext(checksumValidator);
+        return messageHandler;
     }
 }

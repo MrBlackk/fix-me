@@ -14,8 +14,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.mrb.fixme.core.Core;
 import com.mrb.fixme.core.Utils;
+import com.mrb.fixme.core.handler.MandatoryTagsValidator;
 import com.mrb.fixme.core.handler.MessageHandler;
-import com.mrb.fixme.router.handler.ChecksumValidator;
+import com.mrb.fixme.core.handler.ChecksumValidator;
 import com.mrb.fixme.router.handler.MessageProcessor;
 
 public class MessageRouter {
@@ -26,8 +27,7 @@ public class MessageRouter {
     private void start() {
         System.out.println("Message Router turned ON");
         try {
-            final MessageHandler messageHandler = new ChecksumValidator();
-            messageHandler.setNext(new MessageProcessor(routingTable));
+            final MessageHandler messageHandler = getMessageHandler();
 
             final AsynchronousServerSocketChannel brokersListener = AsynchronousServerSocketChannel
                     .open()
@@ -43,6 +43,15 @@ public class MessageRouter {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private MessageHandler getMessageHandler() {
+        final MessageHandler messageHandler = new MandatoryTagsValidator();
+        final MessageHandler checksumValidator = new ChecksumValidator();
+        final MessageHandler messageParser = new MessageProcessor(routingTable);
+        messageHandler.setNext(checksumValidator);
+        checksumValidator.setNext(messageParser);
+        return messageHandler;
     }
 
     public static void main(String[] args) {
@@ -110,14 +119,14 @@ public class MessageRouter {
             System.out.println(clientName + " connected, ID: " + currentId);
             Utils.sendMessage(channel, currentId);
             routingTable.put(currentId, channel);
-            System.out.println(clientName + " routing table: " + routingTable.keySet().toString());
+            System.out.println("Routing table: " + routingTable.keySet().toString());
         }
 
         private void endConnection(String currentId) {
             System.out.println();
             routingTable.remove(currentId);
             System.out.println(clientName + " connection ended, Bye - #" + currentId);
-            System.out.println(clientName + " routing table: " + routingTable.keySet().toString());
+            System.out.println("Routing table: " + routingTable.keySet().toString());
         }
 
         private String getNextId() {

@@ -2,12 +2,18 @@ package com.mrb.fixme.core;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class Utils {
 
     public static final String EMPTY_MESSAGE = "";
+    private static final String[] INSTRUMENTS = {
+            "bolt", "nail", "screwdriver", "screw",
+            "hammer", "saw", "drill", "wrench", "knife",
+            "scissors", "toolbox", "tape", "needle"
+    };
 
     public static String readMessage(AsynchronousSocketChannel channel, ByteBuffer readBuffer) {
         try {
@@ -33,5 +39,16 @@ public class Utils {
     public static Future<Integer> sendMessage(AsynchronousSocketChannel channel, String message) {
         System.out.println("Sending: " + message);
         return channel.write(ByteBuffer.wrap(message.getBytes()));
+    }
+
+    public static Map<String, Integer> getRandomInstruments() {
+        final Map<String, Integer> instruments = new HashMap<>();
+        final Random random = new Random();
+        for(String instrument : INSTRUMENTS) {
+            if (random.nextBoolean()) {
+                instruments.put(instrument, random.nextInt(10));
+            }
+        }
+        return instruments;
     }
 }
