@@ -19,10 +19,11 @@ public class MandatoryTagsValidator extends BaseMessageHandler {
             Integer.parseInt(sourceId);
             Integer.parseInt(targetId);
             Integer.parseInt(checksum);
-        } catch (WrongFixTagException | NumberFormatException ex) {
-            Utils.sendMessage(clientChannel, "Invalid mandatory tags(SOURCE_ID, TARGET_ID, CHECKSUM): " + message);
-            return;
+            super.handle(clientChannel, message);
+        } catch (WrongFixTagException ex) {
+            Utils.sendInternalMessage(clientChannel, ex.getMessage());
+        } catch (NumberFormatException ex) {
+            Utils.sendInternalMessage(clientChannel, "SOURCE_ID, TARGET_ID, CHECKSUM Tags should be numbers: " + message);
         }
-        super.handle(clientChannel, message);
     }
 }

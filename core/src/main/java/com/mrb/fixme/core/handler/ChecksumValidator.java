@@ -16,7 +16,7 @@ public class ChecksumValidator extends BaseMessageHandler {
         if (isValidChecksum) {
             super.handle(clientChannel, message);
         } else {
-            Utils.sendMessage(clientChannel, "Invalid checksum for message: " + message);
+            Utils.sendInternalMessage(clientChannel, "Invalid checksum for message: " + message);
         }
     }
 }

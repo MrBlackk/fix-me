@@ -26,7 +26,7 @@ public class MessageProcessor extends BaseMessageHandler {
             Utils.sendMessage(targetChannel, message);
             super.handle(clientChannel, message);
         } else {
-            Utils.sendMessage(clientChannel, "No client with such id: " + targetId);
+            Utils.sendInternalMessage(clientChannel, "No client with such id: " + targetId);
         }
     }
 }

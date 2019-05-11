@@ -1,6 +1,7 @@
 package com.mrb.fixme.core;
 
 import com.mrb.fixme.core.handler.ChecksumValidator;
+import com.mrb.fixme.core.handler.InternalMessageHandler;
 import com.mrb.fixme.core.handler.MandatoryTagsValidator;
 import com.mrb.fixme.core.handler.MessageHandler;
 
@@ -14,7 +15,7 @@ import java.util.concurrent.Future;
 
 public abstract class Client {
 
-    private static final String FAKE_ID = "00-00-00";
+    private static final String FAKE_ID = "000000";
 
     private final ByteBuffer buffer = ByteBuffer.allocate(Core.DEFAULT_BUFFER_SIZE);
     private final int port;
@@ -87,9 +88,11 @@ public abstract class Client {
     }
 
     protected MessageHandler getMessageHandler() {
-        final MessageHandler messageHandler = new MandatoryTagsValidator();
+        final MessageHandler messageHandler = new InternalMessageHandler();
+        final MessageHandler mandatoryTagsValidator = new MandatoryTagsValidator();
         final MessageHandler checksumValidator = new ChecksumValidator();
-        messageHandler.setNext(checksumValidator);
+        messageHandler.setNext(mandatoryTagsValidator);
+        mandatoryTagsValidator.setNext(checksumValidator);
         return messageHandler;
     }
 }

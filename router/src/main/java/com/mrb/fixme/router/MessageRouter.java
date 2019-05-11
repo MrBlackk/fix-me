@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.mrb.fixme.core.Core;
 import com.mrb.fixme.core.Utils;
+import com.mrb.fixme.core.handler.InternalMessageHandler;
 import com.mrb.fixme.core.handler.MandatoryTagsValidator;
 import com.mrb.fixme.core.handler.MessageHandler;
 import com.mrb.fixme.core.handler.ChecksumValidator;
@@ -46,10 +47,12 @@ public class MessageRouter {
     }
 
     private MessageHandler getMessageHandler() {
-        final MessageHandler messageHandler = new MandatoryTagsValidator();
+        final MessageHandler messageHandler = new InternalMessageHandler();
+        final MessageHandler mandatoryTagsValidator = new MandatoryTagsValidator();
         final MessageHandler checksumValidator = new ChecksumValidator();
         final MessageHandler messageParser = new MessageProcessor(routingTable);
-        messageHandler.setNext(checksumValidator);
+        messageHandler.setNext(mandatoryTagsValidator);
+        mandatoryTagsValidator.setNext(checksumValidator);
         checksumValidator.setNext(messageParser);
         return messageHandler;
     }

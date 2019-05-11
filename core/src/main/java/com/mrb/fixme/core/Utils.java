@@ -8,6 +8,7 @@ import java.util.concurrent.Future;
 
 public class Utils {
 
+    public static final String INTERNAL_MESSAGE = "INTERNAL_MESSAGE:";
     public static final String EMPTY_MESSAGE = "";
     private static final String[] INSTRUMENTS = {
             "bolt", "nail", "screwdriver", "screw",
@@ -39,6 +40,12 @@ public class Utils {
     public static Future<Integer> sendMessage(AsynchronousSocketChannel channel, String message) {
         System.out.println("Sending: " + message);
         return channel.write(ByteBuffer.wrap(message.getBytes()));
+    }
+
+    public static Future<Integer> sendInternalMessage(AsynchronousSocketChannel channel, String message) {
+        System.out.println("Sending internal: " + message);
+        final String internalMessage = INTERNAL_MESSAGE + message;
+        return channel.write(ByteBuffer.wrap(internalMessage.getBytes()));
     }
 
     public static Map<String, Integer> getRandomInstruments() {
