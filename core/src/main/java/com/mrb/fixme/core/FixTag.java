@@ -8,7 +8,8 @@ public enum FixTag {
     QUANTITY(4),
     PRICE(5),
     TYPE(6),
-    RESULT(9),
+    RESULT(8),
+    MESSAGE(9),
     CHECKSUM(10);
 
     private final int num;

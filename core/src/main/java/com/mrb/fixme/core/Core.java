@@ -41,11 +41,20 @@ public class Core {
         return builder.toString();
     }
 
-    public static String resultFixMessage(String result, String srcId, String targetId) {
+    public static String executedMessage(String fixMessage, String message, String clientId) {
+        return Core.resultFixMessage(message, clientId, Core.getFixValueByTag(fixMessage, FixTag.SOURCE_ID), Result.Executed);
+    }
+
+    public static String rejectedMessage(String fixMessage, String message, String clientId) {
+        return Core.resultFixMessage(message, clientId, Core.getFixValueByTag(fixMessage, FixTag.SOURCE_ID), Result.Rejected);
+    }
+
+    public static String resultFixMessage(String message, String srcId, String targetId, Result result) {
         final StringBuilder builder = new StringBuilder();
         addTag(builder, FixTag.SOURCE_ID, srcId);
         addTag(builder, FixTag.TARGET_ID, targetId);
-        addTag(builder, FixTag.RESULT, result);
+        addTag(builder, FixTag.RESULT, result.toString());
+        addTag(builder, FixTag.MESSAGE, message);
         addTag(builder, FixTag.CHECKSUM, calculateChecksum(builder.toString()));
         return builder.toString();
     }

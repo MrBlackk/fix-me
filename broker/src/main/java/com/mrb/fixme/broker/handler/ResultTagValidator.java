@@ -19,7 +19,7 @@ public class ResultTagValidator extends BaseMessageHandler {
             System.out.println(ex.getMessage());
             return;
         }
-        if (result.equals(Result.Executed.toString()) || result.equals(Result.Rejected.toString())) {
+        if (Result.is(result)) {
             super.handle(clientChannel, message);
         } else {
             System.out.println("Wrong result type in message: " + message);

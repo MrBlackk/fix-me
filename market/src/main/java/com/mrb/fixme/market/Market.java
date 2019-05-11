@@ -4,6 +4,7 @@ import com.mrb.fixme.core.Client;
 import com.mrb.fixme.core.Core;
 import com.mrb.fixme.core.Utils;
 import com.mrb.fixme.core.handler.MessageHandler;
+import com.mrb.fixme.market.handler.MarketTagsValidator;
 import com.mrb.fixme.market.handler.MessageExecutor;
 
 import java.util.Map;
@@ -30,7 +31,10 @@ public class Market extends Client {
     @Override
     protected MessageHandler getMessageHandler() {
         final MessageHandler messageHandler = super.getMessageHandler();
-        messageHandler.setNext(new MessageExecutor(getId()));
+        final MessageHandler tagsValidator = new MarketTagsValidator(getId());
+        final MessageHandler messageExecutor = new MessageExecutor(getId());
+        messageHandler.setNext(tagsValidator);
+        tagsValidator.setNext(messageExecutor);
         return messageHandler;
     }
 
