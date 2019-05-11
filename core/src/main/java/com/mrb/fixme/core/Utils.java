@@ -53,7 +53,7 @@ public class Utils {
         final Random random = new Random();
         for(String instrument : INSTRUMENTS) {
             if (random.nextBoolean()) {
-                instruments.put(instrument, random.nextInt(10));
+                instruments.put(instrument, random.nextInt(9) + 1);
             }
         }
         return instruments;

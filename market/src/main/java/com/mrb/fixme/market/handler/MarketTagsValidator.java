@@ -18,11 +18,15 @@ public class MarketTagsValidator extends MessageHandlerWithId {
     public void handle(AsynchronousSocketChannel clientChannel, String message) {
         try {
             Core.getFixValueByTag(message, FixTag.INSTRUMENT);
-            final String quantity = Core.getFixValueByTag(message, FixTag.QUANTITY);
-            final String price = Core.getFixValueByTag(message, FixTag.PRICE);
-
-            Integer.parseInt(quantity);
-            Integer.parseInt(price);
+            final int price = Integer.parseInt(Core.getFixValueByTag(message, FixTag.PRICE));
+            final int quantity = Integer.parseInt(Core.getFixValueByTag(message, FixTag.QUANTITY));
+            if (quantity <= 0) {
+                Utils.sendMessage(clientChannel, Core.rejectedMessage(message, "Negative quantity", getClientId()));
+                return;
+            } else if (price <= 0) {
+                Utils.sendMessage(clientChannel, Core.rejectedMessage(message, "Negative price", getClientId()));
+                return;
+            }
 
             final String type = Core.getFixValueByTag(message, FixTag.TYPE);
             if (MessageType.is(type)) {

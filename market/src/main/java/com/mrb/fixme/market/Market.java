@@ -32,7 +32,7 @@ public class Market extends Client {
     protected MessageHandler getMessageHandler() {
         final MessageHandler messageHandler = super.getMessageHandler();
         final MessageHandler tagsValidator = new MarketTagsValidator(getId());
-        final MessageHandler messageExecutor = new MessageExecutor(getId());
+        final MessageHandler messageExecutor = new MessageExecutor(getId(), instruments);
         messageHandler.setNext(tagsValidator);
         tagsValidator.setNext(messageExecutor);
         return messageHandler;
