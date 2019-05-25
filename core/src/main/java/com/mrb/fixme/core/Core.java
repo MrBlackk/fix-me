@@ -1,5 +1,6 @@
 package com.mrb.fixme.core;
 
+import com.mrb.fixme.core.db.Database;
 import com.mrb.fixme.core.exception.UserInputValidationException;
 import com.mrb.fixme.core.exception.WrongFixTagException;
 
@@ -50,6 +51,7 @@ public class Core {
     }
 
     public static String resultFixMessage(String message, String srcId, String targetId, Result result) {
+        Database.insert();
         final StringBuilder builder = new StringBuilder();
         addTag(builder, FixTag.SOURCE_ID, srcId);
         addTag(builder, FixTag.TARGET_ID, targetId);

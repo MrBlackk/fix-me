@@ -2,7 +2,7 @@ package com.mrb.fixme.market.handler;
 
 import com.mrb.fixme.core.handler.BaseMessageHandler;
 
-public class MessageHandlerWithId extends BaseMessageHandler {
+public abstract class MessageHandlerWithId extends BaseMessageHandler {
 
     private final String clientId;
 
