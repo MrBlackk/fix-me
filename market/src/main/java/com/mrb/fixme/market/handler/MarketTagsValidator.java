@@ -10,8 +10,8 @@ import java.nio.channels.AsynchronousSocketChannel;
 
 public class MarketTagsValidator extends MessageHandlerWithId {
 
-    public MarketTagsValidator(String clientId) {
-        super(clientId);
+    public MarketTagsValidator(String id, String name) {
+        super(id, name);
     }
 
     @Override
@@ -21,10 +21,10 @@ public class MarketTagsValidator extends MessageHandlerWithId {
             final int price = Integer.parseInt(Core.getFixValueByTag(message, FixTag.PRICE));
             final int quantity = Integer.parseInt(Core.getFixValueByTag(message, FixTag.QUANTITY));
             if (quantity <= 0) {
-                Utils.sendMessage(clientChannel, Core.rejectedMessage(message, "Negative quantity", getClientId()));
+                rejectedMessage(clientChannel, message, "Negative quantity");
                 return;
             } else if (price <= 0) {
-                Utils.sendMessage(clientChannel, Core.rejectedMessage(message, "Negative price", getClientId()));
+                rejectedMessage(clientChannel, message, "Negative price");
                 return;
             }
 
@@ -32,12 +32,12 @@ public class MarketTagsValidator extends MessageHandlerWithId {
             if (MessageType.is(type)) {
                 super.handle(clientChannel, message);
             } else {
-                Utils.sendMessage(clientChannel, Core.rejectedMessage(message, "Wrong message type", getClientId()));
+                rejectedMessage(clientChannel, message, "Wrong message type");
             }
         } catch (WrongFixTagException ex) {
-            Utils.sendMessage(clientChannel, Core.rejectedMessage(message, "Wrong fix tags", getClientId()));
+            rejectedMessage(clientChannel, message, "Wrong fix tags");
         } catch (NumberFormatException ex) {
-            Utils.sendMessage(clientChannel, Core.rejectedMessage(message, "Wrong tags type", getClientId()));
+            rejectedMessage(clientChannel, message, "Wrong tags type");
         }
     }
 }

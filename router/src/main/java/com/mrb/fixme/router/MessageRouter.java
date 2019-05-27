@@ -81,15 +81,15 @@ public class MessageRouter {
         private final ExecutorService executor = Executors.newFixedThreadPool(EXECUTOR_THREADS);
         private final AsynchronousServerSocketChannel clientListener;
         private final Map<String, AsynchronousSocketChannel> routingTable;
-        private final String clientName;
+        private final String clientType;
         private final AtomicInteger id;
         private final MessageHandler messageHandler;
 
         private ClientCompletionHandler(AsynchronousServerSocketChannel clientListener, Map<String,AsynchronousSocketChannel> routingTable,
-                                        String clientName, AtomicInteger id, MessageHandler messageHandler) {
+                                        String clientType, AtomicInteger id, MessageHandler messageHandler) {
             this.clientListener = clientListener;
             this.routingTable = routingTable;
-            this.clientName = clientName;
+            this.clientType = clientType;
             this.id = id;
             this.messageHandler = messageHandler;
         }
@@ -97,11 +97,12 @@ public class MessageRouter {
         @Override
         public void completed(AsynchronousSocketChannel channel, Object attachment) {
             clientListener.accept(null, this);
+            final ByteBuffer buffer = ByteBuffer.allocate(Core.DEFAULT_BUFFER_SIZE);
+            final String name = Utils.readMessage(channel, buffer);
 
             final String currentId = getNextId();
-            sendClientId(currentId, channel);
+            sendClientId(channel, currentId, name);
 
-            final ByteBuffer buffer = ByteBuffer.allocate(Core.DEFAULT_BUFFER_SIZE);
             while (true) {
                 final String message = Utils.readMessage(channel, buffer);
                 if (Utils.EMPTY_MESSAGE.equals(message)) {
@@ -109,26 +110,27 @@ public class MessageRouter {
                 }
                 executor.execute(() -> messageHandler.handle(channel, message));
             }
-            endConnection(currentId);
+            endConnection(currentId, name);
         }
 
         @Override
         public void failed(Throwable exc, Object attachment) {
-            System.out.println(clientName + " connection failed");
+            System.out.println(clientType + " connection failed");
         }
 
-        private void sendClientId(String currentId, AsynchronousSocketChannel channel) {
+        private void sendClientId(AsynchronousSocketChannel channel, String currentId, String name) {
+
             System.out.println();
-            System.out.println(clientName + " connected, ID: " + currentId);
+            System.out.println(clientType + " " + name + " connected, ID: " + currentId);
             Utils.sendMessage(channel, currentId);
-            routingTable.put(currentId, channel);
+            routingTable.put(name, channel);
             System.out.println("Routing table: " + routingTable.keySet().toString());
         }
 
-        private void endConnection(String currentId) {
+        private void endConnection(String currentId, String name) {
             System.out.println();
-            routingTable.remove(currentId);
-            System.out.println(clientName + " connection ended, Bye - #" + currentId);
+            routingTable.remove(name);
+            System.out.println(clientType + " " + name + " connection ended, Bye - #" + currentId);
             System.out.println("Routing table: " + routingTable.keySet().toString());
         }
 

@@ -8,14 +8,19 @@ import com.mrb.fixme.core.Utils;
 import com.mrb.fixme.core.exception.UserInputValidationException;
 import com.mrb.fixme.core.handler.MessageHandler;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class Broker extends Client {
 
-    private Broker() {
-        super(Core.BROKER_PORT);
+    public static final String NAME_PREFIX = "B";
+
+    private Broker(String name) {
+        super(Core.BROKER_PORT, NAME_PREFIX + name);
     }
 
     private void start() {
@@ -27,7 +32,7 @@ public class Broker extends Client {
             System.out.println("Message to send " + Core.USER_MESSAGE_FORMAT + ":");
             while (true) {
                 try {
-                    final String message = Core.userInputToFixMessage(scanner.nextLine(), getId());
+                    final String message = Core.userInputToFixMessage(scanner.nextLine(), getId(), getName());
                     final Future<Integer> result = Utils.sendMessage(getSocketChannel(), message);
                     result.get();
                 } catch (UserInputValidationException e) {
@@ -50,6 +55,9 @@ public class Broker extends Client {
     }
 
     public static void main(String[] args) {
-        new Broker().start();
+        final String name = args.length == 1
+                ? args[0]
+                : DateTimeFormatter.ofPattern("mmss").format(LocalDateTime.now());
+        new Broker(name).start();
     }
 }

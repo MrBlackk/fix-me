@@ -12,8 +12,8 @@ public class MessageExecutor extends MessageHandlerWithId {
 
     private final Map<String, Integer> instruments;
 
-    public MessageExecutor(String clientId, Map<String, Integer> instruments) {
-        super(clientId);
+    public MessageExecutor(String clientId, String name, Map<String, Integer> instruments) {
+        super(clientId, name);
         this.instruments = instruments;
     }
 
@@ -26,7 +26,8 @@ public class MessageExecutor extends MessageHandlerWithId {
             final String type = Core.getFixValueByTag(message, FixTag.TYPE);
             if (type.equals(MessageType.Buy.toString())) {
                 if (marketQuantity < quantity) {
-                    Utils.sendMessage(clientChannel, Core.rejectedMessage(message, "Not enough instruments", getClientId()));
+                    rejectedMessage(clientChannel, message, "Not enough instruments");
+                    return;
                 } else {
                     instruments.put(instrument, marketQuantity - quantity);
                 }
@@ -34,11 +35,10 @@ public class MessageExecutor extends MessageHandlerWithId {
                 instruments.put(instrument, marketQuantity + quantity);
             }
             System.out.println("Market instruments: " + instruments.toString());
-            Utils.sendMessage(clientChannel, Core.executedMessage(message, "OK", getClientId()));
+            executedMessage(clientChannel, message, "OK");
             super.handle(clientChannel, message);
         } else {
-            Utils.sendMessage(clientChannel,
-                    Core.rejectedMessage(message, instrument + " instrument is not traded on the market", getClientId()));
+            rejectedMessage(clientChannel, message, instrument + " instrument is not traded on the market");
         }
     }
 }

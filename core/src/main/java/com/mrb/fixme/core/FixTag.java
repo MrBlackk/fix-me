@@ -2,8 +2,9 @@ package com.mrb.fixme.core;
 
 public enum FixTag {
 
-    SOURCE_ID(1),
-    TARGET_ID(2),
+    ID(0),
+    SOURCE_NAME(1),
+    TARGET_NAME(2),
     INSTRUMENT(3),
     QUANTITY(4),
     PRICE(5),

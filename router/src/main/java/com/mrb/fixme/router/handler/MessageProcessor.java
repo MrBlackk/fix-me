@@ -20,13 +20,13 @@ public class MessageProcessor extends BaseMessageHandler {
     public void handle(AsynchronousSocketChannel clientChannel, String message) {
         System.out.println();
         System.out.println("Processing message: " + message);
-        final String targetId = Core.getFixValueByTag(message, FixTag.TARGET_ID);
-        final AsynchronousSocketChannel targetChannel = routingTable.get(targetId);
+        final String targetName = Core.getFixValueByTag(message, FixTag.TARGET_NAME);
+        final AsynchronousSocketChannel targetChannel = routingTable.get(targetName);
         if (targetChannel != null) {
             Utils.sendMessage(targetChannel, message);
             super.handle(clientChannel, message);
         } else {
-            Utils.sendInternalMessage(clientChannel, "No client with such id: " + targetId);
+            Utils.sendInternalMessage(clientChannel, "No connected client with such name: " + targetName);
         }
     }
 }

@@ -16,24 +16,21 @@ public class Core {
     public static final String BROKER_NAME = "Broker";
     public static final int DEFAULT_BUFFER_SIZE = 4096;
     public static final String ID_FORMAT = "%06d";
-    public static final String USER_MESSAGE_FORMAT = "'MARKET_ID BUY_OR_SELL INSTRUMENT_NAME QUANTITY PRICE'";
+    public static final String USER_MESSAGE_FORMAT = "'MARKET_NAME BUY_OR_SELL INSTRUMENT_NAME QUANTITY PRICE'";
 
     private static final String USER_INPUT_DELIMITER = " ";
     private static final String TAG_VALUE_DELIMITER = "=";
     private static final String FIELD_DELIMITER = "|";
 
-    public static String userInputToFixMessage(String input, String id) throws UserInputValidationException {
+    public static String userInputToFixMessage(String input, String id, String name) throws UserInputValidationException {
         final String[] m = input.split(USER_INPUT_DELIMITER);
-        if (m.length != 5) { //todo: full validation of input
+        if (m.length != 5) {
             throw new UserInputValidationException("Wrong input, should be: " + USER_MESSAGE_FORMAT);
         }
         final StringBuilder builder = new StringBuilder();
-        addTag(builder, FixTag.SOURCE_ID, id);
-        try {
-            addTag(builder, FixTag.TARGET_ID, String.format(ID_FORMAT, Integer.parseInt(m[0])));
-        } catch (NumberFormatException ex) {
-            throw new UserInputValidationException("Id should be a number");
-        }
+        addTag(builder, FixTag.ID, id);
+        addTag(builder, FixTag.SOURCE_NAME, name);
+        addTag(builder, FixTag.TARGET_NAME, m[0]);
         addTag(builder, FixTag.TYPE, m[1]);
         addTag(builder, FixTag.INSTRUMENT, m[2]);
         addTag(builder, FixTag.QUANTITY, m[3]);
@@ -42,19 +39,24 @@ public class Core {
         return builder.toString();
     }
 
-    public static String executedMessage(String fixMessage, String message, String clientId) {
-        return Core.resultFixMessage(message, clientId, Core.getFixValueByTag(fixMessage, FixTag.SOURCE_ID), Result.Executed);
+    public static String executedMessage(String fixMessage, String message, String id, String srcName) {
+        return Core.resultFixMessage(message, id, srcName,
+                Core.getFixValueByTag(fixMessage, FixTag.SOURCE_NAME),
+                Result.Executed);
     }
 
-    public static String rejectedMessage(String fixMessage, String message, String clientId) {
-        return Core.resultFixMessage(message, clientId, Core.getFixValueByTag(fixMessage, FixTag.SOURCE_ID), Result.Rejected);
+    public static String rejectedMessage(String fixMessage, String message, String id, String srcName) {
+        return Core.resultFixMessage(message, id, srcName,
+                Core.getFixValueByTag(fixMessage, FixTag.SOURCE_NAME),
+                Result.Rejected);
     }
 
-    public static String resultFixMessage(String message, String srcId, String targetId, Result result) {
+    public static String resultFixMessage(String message, String id, String srcName, String targetName, Result result) {
         Database.insert();
         final StringBuilder builder = new StringBuilder();
-        addTag(builder, FixTag.SOURCE_ID, srcId);
-        addTag(builder, FixTag.TARGET_ID, targetId);
+        addTag(builder, FixTag.ID, id);
+        addTag(builder, FixTag.SOURCE_NAME, srcName);
+        addTag(builder, FixTag.TARGET_NAME, targetName);
         addTag(builder, FixTag.RESULT, result.toString());
         addTag(builder, FixTag.MESSAGE, message);
         addTag(builder, FixTag.CHECKSUM, calculateChecksum(builder.toString()));

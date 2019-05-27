@@ -12,18 +12,18 @@ public class MandatoryTagsValidator extends BaseMessageHandler {
     @Override
     public void handle(AsynchronousSocketChannel clientChannel, String message) {
         try {
-            final String sourceId = Core.getFixValueByTag(message, FixTag.SOURCE_ID);
-            final String targetId = Core.getFixValueByTag(message, FixTag.TARGET_ID);
+            final String sourceId = Core.getFixValueByTag(message, FixTag.ID);
+            Core.getFixValueByTag(message, FixTag.SOURCE_NAME);
+            Core.getFixValueByTag(message, FixTag.TARGET_NAME);
             final String checksum = Core.getFixValueByTag(message, FixTag.CHECKSUM);
 
             Integer.parseInt(sourceId);
-            Integer.parseInt(targetId);
             Integer.parseInt(checksum);
             super.handle(clientChannel, message);
         } catch (WrongFixTagException ex) {
             Utils.sendInternalMessage(clientChannel, ex.getMessage());
         } catch (NumberFormatException ex) {
-            Utils.sendInternalMessage(clientChannel, "SOURCE_ID, TARGET_ID, CHECKSUM Tags should be numbers: " + message);
+            Utils.sendInternalMessage(clientChannel, "SOURCE_ID, CHECKSUM Tags should be numbers: " + message);
         }
     }
 }

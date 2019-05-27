@@ -7,14 +7,19 @@ import com.mrb.fixme.core.handler.MessageHandler;
 import com.mrb.fixme.market.handler.MarketTagsValidator;
 import com.mrb.fixme.market.handler.MessageExecutor;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.Map;
 
 public class Market extends Client {
 
+    public static final String NAME_PREFIX = "M";
     private final Map<String, Integer> instruments;
 
-    private Market() {
-        super(Core.MARKET_PORT);
+    private Market(String name) {
+        super(Core.MARKET_PORT, NAME_PREFIX + name);
         instruments = Utils.getRandomInstruments();
     }
 
@@ -28,14 +33,17 @@ public class Market extends Client {
     @Override
     protected MessageHandler getMessageHandler() {
         final MessageHandler messageHandler = super.getMessageHandler();
-        final MessageHandler tagsValidator = new MarketTagsValidator(getId());
-        final MessageHandler messageExecutor = new MessageExecutor(getId(), instruments);
+        final MessageHandler tagsValidator = new MarketTagsValidator(getId(), getName());
+        final MessageHandler messageExecutor = new MessageExecutor(getId(), getName(), instruments);
         messageHandler.setNext(tagsValidator);
         tagsValidator.setNext(messageExecutor);
         return messageHandler;
     }
 
     public static void main(String[] args) {
-        new Market().start();
+        final String name = args.length == 1
+                ? args[0]
+                : DateTimeFormatter.ofPattern("mmss").format(LocalDateTime.now());
+        new Market(name).start();
     }
 }

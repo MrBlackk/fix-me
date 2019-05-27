@@ -19,19 +19,22 @@ public abstract class Client {
 
     private final ByteBuffer buffer = ByteBuffer.allocate(Core.DEFAULT_BUFFER_SIZE);
     private final int port;
+    private final String name;
 
     private AsynchronousSocketChannel socketChannel;
     private String id = FAKE_ID;
 
-    public Client(int port) {
+    public Client(int port, String name) {
         this.port = port;
+        this.name = name;
     }
 
     protected AsynchronousSocketChannel getSocketChannel() {
         if (socketChannel == null) {
             socketChannel = connectToMessageRouter();
+            Utils.sendMessage(socketChannel, name);
             id = Utils.readMessage(socketChannel, buffer);
-            System.out.println("Current ID: " + id);
+            System.out.println(name + " ID: " + id);
             return socketChannel;
         }
         return socketChannel;
@@ -62,13 +65,17 @@ public abstract class Client {
         return id;
     }
 
+    protected String getName() {
+        return name;
+    }
+
     protected void readFromSocket() {
         getSocketChannel().read(buffer, null, new CompletionHandler<Integer, Object>() {
             @Override
             public void completed(Integer result, Object attachment) {
                 final String message = Utils.read(result, buffer);
                 if (Utils.EMPTY_MESSAGE.equals(message)) {
-                    System.out.println("Message router died! Have to reconnect somehow");
+                    System.out.println("Message router died! Have to reconnect");
                     invalidateConnection();
                 } else {
                     onSuccessRead(message);
@@ -78,7 +85,9 @@ public abstract class Client {
 
             @Override
             public void failed(Throwable exc, Object attachment) {
-                System.out.println("Reading failed");
+                System.out.println("Message router died! Have to reconnect");
+                invalidateConnection();
+                getSocketChannel().read(buffer, null, this);
             }
         });
     }
