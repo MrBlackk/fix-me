@@ -74,17 +74,20 @@ public abstract class Client {
             @Override
             public void completed(Integer result, Object attachment) {
                 final String message = Utils.read(result, buffer);
-                if (Utils.EMPTY_MESSAGE.equals(message)) {
-                    System.out.println("Message router died! Have to reconnect");
-                    invalidateConnection();
-                } else {
+                if (!Utils.EMPTY_MESSAGE.equals(message)) {
                     onSuccessRead(message);
+                    getSocketChannel().read(buffer, null, this);
+                } else {
+                    reconnect();
                 }
-                getSocketChannel().read(buffer, null, this);
             }
 
             @Override
             public void failed(Throwable exc, Object attachment) {
+                reconnect();
+            }
+
+            private void reconnect() {
                 System.out.println("Message router died! Have to reconnect");
                 invalidateConnection();
                 getSocketChannel().read(buffer, null, this);

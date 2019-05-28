@@ -11,9 +11,12 @@ import java.util.Map;
 public class MessageProcessor extends BaseMessageHandler {
 
     private final Map<String, AsynchronousSocketChannel> routingTable;
+    private final Map<String, String> failedMessages;
 
-    public MessageProcessor(Map<String, AsynchronousSocketChannel> routingTable) {
+    public MessageProcessor(Map<String, AsynchronousSocketChannel> routingTable,
+                            Map<String, String> failedMessages) {
         this.routingTable = routingTable;
+        this.failedMessages = failedMessages;
     }
 
     @Override
@@ -26,7 +29,9 @@ public class MessageProcessor extends BaseMessageHandler {
             Utils.sendMessage(targetChannel, message);
             super.handle(clientChannel, message);
         } else {
-            Utils.sendInternalMessage(clientChannel, "No connected client with such name: " + targetName);
+            Utils.sendInternalMessage(clientChannel,
+                    "No connected client with such name: " + targetName + ", will try later");
+            failedMessages.put(targetName, message);
         }
     }
 }

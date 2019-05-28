@@ -2,14 +2,10 @@ package com.mrb.fixme.router;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
-import java.nio.channels.CompletionHandler;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.mrb.fixme.core.Core;
@@ -22,8 +18,10 @@ import com.mrb.fixme.router.handler.MessageProcessor;
 
 public class MessageRouter {
 
+    private static final int FAILED_MESSAGES_RETRY_TIMEOUT = 10000;
     private final AtomicInteger id = new AtomicInteger(Core.INITIAL_ID);
     private final Map<String, AsynchronousSocketChannel> routingTable = new ConcurrentHashMap<>();
+    private final Map<String, String> failedToSendMessages = new ConcurrentHashMap<>();
 
     private void start() {
         System.out.println("Message Router turned ON");
@@ -42,7 +40,29 @@ public class MessageRouter {
             marketsListener.accept(null,
                     new ClientCompletionHandler(marketsListener, routingTable, Core.MARKET_NAME, id, messageHandler));
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Couldn't open socket");
+        }
+        while (true) {
+            try {
+                Thread.sleep(FAILED_MESSAGES_RETRY_TIMEOUT);
+            } catch (InterruptedException ignored) {
+            }
+            tryToSendFailedMessages();
+        }
+    }
+
+    private void tryToSendFailedMessages() {
+        if (!failedToSendMessages.isEmpty()) {
+            System.out.println("Trying to send failed messages...");
+            failedToSendMessages.keySet().removeIf(targetName -> {
+                final AsynchronousSocketChannel targetChannel = routingTable.get(targetName);
+                if (targetChannel != null) {
+                    System.out.println("Found " + targetName + ", sending message");
+                    Utils.sendMessage(targetChannel, failedToSendMessages.get(targetName));
+                    return true;
+                }
+                return false;
+            });
         }
     }
 
@@ -50,7 +70,7 @@ public class MessageRouter {
         final MessageHandler messageHandler = new InternalMessageHandler();
         final MessageHandler mandatoryTagsValidator = new MandatoryTagsValidator();
         final MessageHandler checksumValidator = new ChecksumValidator();
-        final MessageHandler messageParser = new MessageProcessor(routingTable);
+        final MessageHandler messageParser = new MessageProcessor(routingTable, failedToSendMessages);
         messageHandler.setNext(mandatoryTagsValidator);
         mandatoryTagsValidator.setNext(checksumValidator);
         checksumValidator.setNext(messageParser);
@@ -59,83 +79,5 @@ public class MessageRouter {
 
     public static void main(String[] args) {
         new MessageRouter().start();
-        int i = 0;
-        while (true) {
-            System.out.print('.');
-            i++;
-            if (i % 50 == 0) {
-                System.out.println();
-            }
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private static class ClientCompletionHandler implements CompletionHandler<AsynchronousSocketChannel, Object> {
-
-        private static final int EXECUTOR_THREADS = 5;
-
-        private final ExecutorService executor = Executors.newFixedThreadPool(EXECUTOR_THREADS);
-        private final AsynchronousServerSocketChannel clientListener;
-        private final Map<String, AsynchronousSocketChannel> routingTable;
-        private final String clientType;
-        private final AtomicInteger id;
-        private final MessageHandler messageHandler;
-
-        private ClientCompletionHandler(AsynchronousServerSocketChannel clientListener, Map<String,AsynchronousSocketChannel> routingTable,
-                                        String clientType, AtomicInteger id, MessageHandler messageHandler) {
-            this.clientListener = clientListener;
-            this.routingTable = routingTable;
-            this.clientType = clientType;
-            this.id = id;
-            this.messageHandler = messageHandler;
-        }
-
-        @Override
-        public void completed(AsynchronousSocketChannel channel, Object attachment) {
-            clientListener.accept(null, this);
-            final ByteBuffer buffer = ByteBuffer.allocate(Core.DEFAULT_BUFFER_SIZE);
-            final String name = Utils.readMessage(channel, buffer);
-
-            final String currentId = getNextId();
-            sendClientId(channel, currentId, name);
-
-            while (true) {
-                final String message = Utils.readMessage(channel, buffer);
-                if (Utils.EMPTY_MESSAGE.equals(message)) {
-                    break;
-                }
-                executor.execute(() -> messageHandler.handle(channel, message));
-            }
-            endConnection(currentId, name);
-        }
-
-        @Override
-        public void failed(Throwable exc, Object attachment) {
-            System.out.println(clientType + " connection failed");
-        }
-
-        private void sendClientId(AsynchronousSocketChannel channel, String currentId, String name) {
-
-            System.out.println();
-            System.out.println(clientType + " " + name + " connected, ID: " + currentId);
-            Utils.sendMessage(channel, currentId);
-            routingTable.put(name, channel);
-            System.out.println("Routing table: " + routingTable.keySet().toString());
-        }
-
-        private void endConnection(String currentId, String name) {
-            System.out.println();
-            routingTable.remove(name);
-            System.out.println(clientType + " " + name + " connection ended, Bye - #" + currentId);
-            System.out.println("Routing table: " + routingTable.keySet().toString());
-        }
-
-        private String getNextId() {
-            return String.format(Core.ID_FORMAT, id.getAndIncrement());
-        }
     }
 }
