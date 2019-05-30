@@ -4,6 +4,7 @@ import com.mrb.fixme.core.Core;
 import com.mrb.fixme.core.FixTag;
 import com.mrb.fixme.core.MessageType;
 import com.mrb.fixme.core.Utils;
+import com.mrb.fixme.core.db.Database;
 
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.Map;
@@ -36,9 +37,13 @@ public class MessageExecutor extends MessageHandlerWithId {
             }
             System.out.println("Market instruments: " + instruments.toString());
             executedMessage(clientChannel, message, "OK");
-            super.handle(clientChannel, message);
         } else {
             rejectedMessage(clientChannel, message, instrument + " instrument is not traded on the market");
         }
+    }
+
+    @Override
+    protected boolean isInsertMessagesToDb() {
+        return true;
     }
 }

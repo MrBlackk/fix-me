@@ -16,6 +16,11 @@
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.27.2.1</version>
         </dependency>
+        <dependency>
+            <groupId>de.vandermeer</groupId>
+            <artifactId>asciitable</artifactId>
+            <version>0.3.2</version>
+        </dependency>
     </dependencies>
 
     <artifactId>core</artifactId>

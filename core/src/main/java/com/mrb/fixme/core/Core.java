@@ -39,20 +39,7 @@ public class Core {
         return builder.toString();
     }
 
-    public static String executedMessage(String fixMessage, String message, String id, String srcName) {
-        return Core.resultFixMessage(message, id, srcName,
-                Core.getFixValueByTag(fixMessage, FixTag.SOURCE_NAME),
-                Result.Executed);
-    }
-
-    public static String rejectedMessage(String fixMessage, String message, String id, String srcName) {
-        return Core.resultFixMessage(message, id, srcName,
-                Core.getFixValueByTag(fixMessage, FixTag.SOURCE_NAME),
-                Result.Rejected);
-    }
-
     public static String resultFixMessage(String message, String id, String srcName, String targetName, Result result) {
-        Database.insert();
         final StringBuilder builder = new StringBuilder();
         addTag(builder, FixTag.ID, id);
         addTag(builder, FixTag.SOURCE_NAME, srcName);
