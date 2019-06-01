@@ -7,10 +7,6 @@ import com.mrb.fixme.core.handler.MessageHandler;
 import com.mrb.fixme.market.handler.MarketTagsValidator;
 import com.mrb.fixme.market.handler.MessageExecutor;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.Map;
 
 public class Market extends Client {
@@ -41,9 +37,6 @@ public class Market extends Client {
     }
 
     public static void main(String[] args) {
-        final String name = args.length == 1
-                ? args[0]
-                : DateTimeFormatter.ofPattern("mmss").format(LocalDateTime.now());
-        new Market(name).start();
+        new Market(Utils.getClientName(args)).start();
     }
 }

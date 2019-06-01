@@ -8,9 +8,6 @@ import com.mrb.fixme.core.Utils;
 import com.mrb.fixme.core.exception.UserInputValidationException;
 import com.mrb.fixme.core.handler.MessageHandler;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -55,9 +52,6 @@ public class Broker extends Client {
     }
 
     public static void main(String[] args) {
-        final String name = args.length == 1
-                ? args[0]
-                : DateTimeFormatter.ofPattern("mmss").format(LocalDateTime.now());
-        new Broker(name).start();
+        new Broker(Utils.getClientName(args)).start();
     }
 }

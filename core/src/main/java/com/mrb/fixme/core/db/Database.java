@@ -5,13 +5,13 @@ import de.vandermeer.asciitable.AsciiTable;
 import java.sql.*;
 
 public class Database {
-    private static final String DATABASE_URL = "jdbc:sqlite::resource:transactions.db";
+    private static final String DATABASE_URL = "jdbc:sqlite:resources/transactions.db";
     private static final String INSERT_QUERY = "INSERT INTO transactions(market_name, broker_name, op_type, instrument, " +
             "price, quantity, result, comment) VALUES(?,?,?,?,?,?,?,?)";
     private static final String SELECT_QUERY = "SELECT * FROM transactions";
     private static Connection connection;
 
-    public static void connect() {
+    private static void connect() {
         try {
             connection = DriverManager.getConnection(DATABASE_URL);
         } catch (SQLException e) {
@@ -19,7 +19,7 @@ public class Database {
         }
     }
 
-    public static void close() {
+    private static void close() {
         try {
             if (connection != null) {
                 connection.close();

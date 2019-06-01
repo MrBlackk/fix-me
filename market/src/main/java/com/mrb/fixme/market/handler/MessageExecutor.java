@@ -3,8 +3,6 @@ package com.mrb.fixme.market.handler;
 import com.mrb.fixme.core.Core;
 import com.mrb.fixme.core.FixTag;
 import com.mrb.fixme.core.MessageType;
-import com.mrb.fixme.core.Utils;
-import com.mrb.fixme.core.db.Database;
 
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.Map;

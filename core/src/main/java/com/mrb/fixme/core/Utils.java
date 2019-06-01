@@ -2,6 +2,8 @@ package com.mrb.fixme.core;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -57,5 +59,11 @@ public class Utils {
             }
         }
         return instruments;
+    }
+
+    public static String getClientName(String[] args) {
+        return args.length == 1
+                ? args[0]
+                : DateTimeFormatter.ofPattern("mmss").format(LocalDateTime.now());
     }
 }
