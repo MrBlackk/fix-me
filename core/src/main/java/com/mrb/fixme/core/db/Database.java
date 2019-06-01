@@ -1,6 +1,7 @@
 package com.mrb.fixme.core.db;
 
 import de.vandermeer.asciitable.AsciiTable;
+import de.vandermeer.asciitable.CWC_LongestLine;
 
 import java.sql.*;
 
@@ -66,19 +67,23 @@ public class Database {
                 final ResultSet rs = stmt.executeQuery(SELECT_QUERY)) {
                 final AsciiTable at = new AsciiTable();
                 at.addRule();
-                at.addRow("id", "market_name", "broker_name", "op_type", "result");
+                at.addRow("id", "Market", "Broker", "Operation", "Instrument", "Quantity", "Result", "Comment");
                 while (rs.next()) {
                     at.addRule();
                     at.addRow(rs.getInt("id"),
                             rs.getString("market_name"),
                             rs.getString("broker_name"),
                             rs.getString("op_type"),
-                            rs.getString("result"));
+                            rs.getString("instrument"),
+                            rs.getString("quantity"),
+                            rs.getString("result"),
+                            rs.getString("comment"));
                 }
                 at.addRule();
+                at.getRenderer().setCWC(new CWC_LongestLine());
                 System.out.println(at.render());
             } catch (SQLException e) {
-                System.out.println("Error on insert");
+                System.out.println("Error on select");
             } finally {
                 close();
             }

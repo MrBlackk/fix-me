@@ -32,13 +32,13 @@ public class MessageRouter {
                     .open()
                     .bind(new InetSocketAddress(Core.HOST_NAME, Core.BROKER_PORT));
             brokersListener.accept(null,
-                    new ClientCompletionHandler(brokersListener, routingTable, Core.BROKER_NAME, id, messageHandler));
+                    new ClientCompletionHandler(brokersListener, routingTable, id, messageHandler));
 
             final AsynchronousServerSocketChannel marketsListener = AsynchronousServerSocketChannel
                     .open()
                     .bind(new InetSocketAddress(Core.HOST_NAME, Core.MARKET_PORT));
             marketsListener.accept(null,
-                    new ClientCompletionHandler(marketsListener, routingTable, Core.MARKET_NAME, id, messageHandler));
+                    new ClientCompletionHandler(marketsListener, routingTable, id, messageHandler));
         } catch (IOException e) {
             System.out.println("Couldn't open socket");
         }
@@ -57,7 +57,7 @@ public class MessageRouter {
             failedToSendMessages.keySet().removeIf(targetName -> {
                 final AsynchronousSocketChannel targetChannel = routingTable.get(targetName);
                 if (targetChannel != null) {
-                    System.out.println("Found " + targetName + ", sending message");
+                    System.out.println("Found message to resend " + targetName + ", sending message");
                     Utils.sendMessage(targetChannel, failedToSendMessages.get(targetName));
                     return true;
                 }

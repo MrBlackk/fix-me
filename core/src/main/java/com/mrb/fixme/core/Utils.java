@@ -33,19 +33,19 @@ public class Utils {
             readBuffer.get(bytes, 0, bytesRead);
             readBuffer.clear();
             String message = new String(bytes);
-            System.out.println("Message: " + message);
+            System.out.println("Got: " + message);
             return message;
         }
         return EMPTY_MESSAGE;
     }
 
     public static Future<Integer> sendMessage(AsynchronousSocketChannel channel, String message) {
-        System.out.println("Sending: " + message);
+        System.out.println("Send: " + message);
         return channel.write(ByteBuffer.wrap(message.getBytes()));
     }
 
     public static Future<Integer> sendInternalMessage(AsynchronousSocketChannel channel, String message) {
-        System.out.println("Sending internal: " + message);
+        System.out.println("Send internal: " + message);
         final String internalMessage = INTERNAL_MESSAGE + message;
         return channel.write(ByteBuffer.wrap(internalMessage.getBytes()));
     }

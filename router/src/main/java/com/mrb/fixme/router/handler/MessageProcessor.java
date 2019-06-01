@@ -21,7 +21,6 @@ public class MessageProcessor extends BaseMessageHandler {
 
     @Override
     public void handle(AsynchronousSocketChannel clientChannel, String message) {
-        System.out.println();
         System.out.println("Processing message: " + message);
         final String targetName = Core.getFixValueByTag(message, FixTag.TARGET_NAME);
         final AsynchronousSocketChannel targetChannel = routingTable.get(targetName);

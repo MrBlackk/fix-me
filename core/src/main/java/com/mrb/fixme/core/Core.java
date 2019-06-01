@@ -1,6 +1,5 @@
 package com.mrb.fixme.core;
 
-import com.mrb.fixme.core.db.Database;
 import com.mrb.fixme.core.exception.UserInputValidationException;
 import com.mrb.fixme.core.exception.WrongFixTagException;
 
@@ -12,8 +11,6 @@ public class Core {
     public static final int BROKER_PORT = 5000;
     public static final int MARKET_PORT = 5001;
     public static final int INITIAL_ID = 1;
-    public static final String MARKET_NAME = "Market";
-    public static final String BROKER_NAME = "Broker";
     public static final int DEFAULT_BUFFER_SIZE = 4096;
     public static final String ID_FORMAT = "%06d";
     public static final String USER_MESSAGE_FORMAT = "'MARKET_NAME BUY_OR_SELL INSTRUMENT_NAME QUANTITY PRICE'";

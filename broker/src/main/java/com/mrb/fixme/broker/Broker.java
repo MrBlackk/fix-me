@@ -21,7 +21,6 @@ public class Broker extends Client {
     }
 
     private void start() {
-        System.out.println("Broker turned ON");
         try {
             readFromSocket();
 

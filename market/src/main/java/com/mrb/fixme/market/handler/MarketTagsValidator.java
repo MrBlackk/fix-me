@@ -31,12 +31,12 @@ public class MarketTagsValidator extends MessageHandlerWithId {
             if (MessageType.is(type)) {
                 super.handle(clientChannel, message);
             } else {
-                rejectedMessage(clientChannel, message, "Wrong message type");
+                rejectedMessage(clientChannel, message, "Wrong operation type");
             }
         } catch (WrongFixTagException ex) {
             rejectedMessage(clientChannel, message, "Wrong fix tags");
         } catch (NumberFormatException ex) {
-            rejectedMessage(clientChannel, message, "Wrong tags type");
+            rejectedMessage(clientChannel, message, "Wrong value type");
         }
     }
 }
