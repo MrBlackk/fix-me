@@ -19,11 +19,11 @@ public class MarketTagsValidator extends MessageHandlerWithId {
             Core.getFixValueByTag(message, FixTag.INSTRUMENT);
             final int price = Integer.parseInt(Core.getFixValueByTag(message, FixTag.PRICE));
             final int quantity = Integer.parseInt(Core.getFixValueByTag(message, FixTag.QUANTITY));
-            if (quantity <= 0) {
-                rejectedMessage(clientChannel, message, "Negative quantity");
+            if (quantity <= 0 || quantity > 10000) {
+                rejectedMessage(clientChannel, message, "Wrong quantity(1-10k)");
                 return;
-            } else if (price <= 0) {
-                rejectedMessage(clientChannel, message, "Negative price");
+            } else if (price <= 0 || price > 10000) {
+                rejectedMessage(clientChannel, message, "Wrong price(1-10k");
                 return;
             }
 
